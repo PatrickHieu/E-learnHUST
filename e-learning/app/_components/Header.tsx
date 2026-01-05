@@ -85,7 +85,7 @@ function Header() {
                     <NavigationMenuItem>
                         <NavigationMenuTrigger>Courses</NavigationMenuTrigger>
                         <NavigationMenuContent>
-                            <ul className="grid md:grid-cols-2 gap-2 sm:w-[400px] md:w-[500px] lg: w-[600px]">
+                            <ul className="grid md:grid-cols-2 gap-2 sm:w-100 md:w-125 lg:w-150">
                                 {courses.map((course, index) => (
                                     <div key={index} className="p-2 hover:bg-accent rounded-xl cursor-pointer">
                                         <h2 className="font-medium">{course.name}</h2>
