@@ -2,6 +2,14 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Jersey_10 } from "next/font/google";
 import "./globals.css";
 import Provider from "./provider";
+import {
+  ClerkProvider,
+  SignInButton,
+  SignUpButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +24,8 @@ const geistMono = Geist_Mono({
 const GameFont = Jersey_10({
   variable: "--font-game",
   subsets: ["latin"],
-  weight: ["400"]
-})
+  weight: ["400"],
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -30,17 +38,21 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${GameFont.variable} antialiased`}
-      >
-        <Provider attribute="class"
-          defaultTheme="dark"
-          enableSystem
-          disableTransitionOnChange>
-          {children}
-        </Provider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html lang="en" suppressHydrationWarning className="dark">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} ${GameFont.variable} antialiased`}
+        >
+          <Provider
+            attribute="class"
+            defaultTheme="dark"
+            enableSystem
+            disableTransitionOnChange
+          >
+            {children}
+          </Provider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }
