@@ -6,8 +6,6 @@ import Headers from "../app/_components/Header";
 export default function Home() {
   return (
     <div className="flex flex-col items-center">
-      {/* Header / Nav Bar */}
-        <Headers/>
       {/* Hero Section */}
         <Hero/>
     </div>

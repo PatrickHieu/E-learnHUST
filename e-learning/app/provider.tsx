@@ -6,6 +6,7 @@ import axios from "axios";
 import { User } from "lucide-react";
 import { UserDetailContext } from "@/context/UserDetailContext";
 import { useState } from "react";
+import Headers from "../app/_components/Header";
 
 function Provider({
     children,
@@ -29,6 +30,10 @@ function Provider({
         <NextThemesProvider
             {...props}>
             <UserDetailContext.Provider value={{ userDetail, setUserDetail }}>
+                <div className="flex flex-col items-center">
+                    {/* Header / Nav Bar */}
+                    <Headers />
+                </div>
                 {children}
             </UserDetailContext.Provider>
         </NextThemesProvider>
