@@ -8,7 +8,7 @@ function Upgrade() {
           <Image src={'/upgrade.png'} alt="upgrade-banner" width={100} height={100} />
           <h2 className='text-3xl font-game'>Update to Pro</h2>
           <p className='font-game text-gray-500 text-xl'>Join Pro Membership and Get All course access</p>
-          <Button className='font-game' variant={'pixel'} size={'lg'}>Upgrade</Button>
+          <Button className='font-game text-2xl' variant={'pixel'} size={'lg'}>Upgrade</Button>
     </div>
   )
 }
