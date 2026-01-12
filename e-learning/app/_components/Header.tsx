@@ -80,7 +80,9 @@ function Header() {
   return (
     <div className="p-4 max-w-7xl flex justify-between items-center w-full">
       <div className="flex gap-2 items-center">
-        <Image src={"/logo.png"} alt="Logo" width={40} height={40} />
+        <Link href="/">
+          <Image src={"/logo.png"} alt="Logo" width={40} height={40} />
+        </Link> 
         <h2 className="font-bold text-4xl font-game">Code Block</h2>
       </div>
 
@@ -88,20 +90,24 @@ function Header() {
       <NavigationMenu>
         <NavigationMenuList className="gap-8">
           <NavigationMenuItem>
-            <NavigationMenuTrigger>Courses</NavigationMenuTrigger>
-            <NavigationMenuContent>
-              <ul className="grid md:grid-cols-2 gap-2 sm:w-100 md:w-125 lg:w-150">
-                {courses.map((course, index) => (
-                  <div
-                    key={index}
-                    className="p-2 hover:bg-accent rounded-xl cursor-pointer"
-                  >
-                    <h2 className="font-medium">{course.name}</h2>
-                    <p className="text-sm text-gray-400">{course.desc}</p>
-                  </div>
-                ))}
-              </ul>
-            </NavigationMenuContent>
+            <NavigationMenuLink>
+              <Link href="/courses">
+                <NavigationMenuTrigger>Courses</NavigationMenuTrigger>
+              </Link>
+              <NavigationMenuContent>
+                <ul className="grid md:grid-cols-2 gap-2 sm:w-100 md:w-125 lg:w-150">
+                  {courses.map((course, index) => (
+                    <div
+                      key={index}
+                      className="p-2 hover:bg-accent rounded-xl cursor-pointer"
+                    >
+                      <h2 className="font-medium">{course.name}</h2>
+                      <p className="text-sm text-gray-400">{course.desc}</p>
+                    </div>
+                  ))}
+                </ul>
+              </NavigationMenuContent>
+            </NavigationMenuLink>
           </NavigationMenuItem>
           <NavigationMenuItem>
             <NavigationMenuLink>
