@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/config/db";
-import { CourseChapterTable, CoursesTable, EnrolledCourseTable} from "@/config/schema";
+import { CompletedExerciseTable, CourseChapterTable, CoursesTable, EnrolledCourseTable} from "@/config/schema";
 import { eq, asc, desc } from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
 import { and } from "drizzle-orm";
@@ -27,11 +27,21 @@ export async function GET(req: NextRequest) {
       ));
     
     const isEnrolledCourse=enrolledCourse?.length>0?true:false
+
+    const completeExercises = await db.select().from(CompletedExerciseTable)
+      //@ts-ignore
+      .where(and(eq(CompletedExerciseTable.courseId, courseId), eq(CompletedExerciseTable.userId, user?.primaryEmailAddress?.emailAddress)
+      ))
+      .orderBy(desc(CompletedExerciseTable?.courseId),
+        desc(CompletedExerciseTable?.exerciseId)
+      );
+
     return NextResponse.json({
       ...result[0],
       chapters: chapterResult,
       userEnrolled: isEnrolledCourse,
-      courseEnrolledInfo:enrolledCourse[0]
+      courseEnrolledInfo: enrolledCourse[0],
+      completedExercises: completeExercises
     });
   } else {
     //fetch all courses from the database

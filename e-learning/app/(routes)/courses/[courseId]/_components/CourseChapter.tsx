@@ -24,6 +24,38 @@ type Props = {
 
 
 function CourseChapter({ loading, courseDetail }: Props) {
+
+  const isExerciseCompleted = (chapterId: number, excerciseId: number) => {
+    const completeChapters = courseDetail?.completedExercises;
+    const completeChapter = completeChapters?.find(item => (item.chapterId == chapterId && item.exerciseId == excerciseId));
+    return completeChapter ? true : false;
+  }
+
+  const EnableExercise = (
+    chapterIndex: number,
+    exerciseIndex: number,
+    chapterExercisesLength: number
+  ) => {
+    const completed = courseDetail?.completedExercises;
+
+    // If nothing is completed, enable FIRST exercise ONLY
+    if (!completed || completed.length === 0) {
+      return chapterIndex === 0 && exerciseIndex === 0;
+    }
+
+    // last completed
+    const last = completed[completed.length - 1];
+
+    // Convert to global exercise number
+    const currentExerciseNumber =
+      chapterIndex * chapterExercisesLength + exerciseIndex + 1;
+
+    const lastCompletedNumber =
+      (last.chapterId - 1) * chapterExercisesLength + last.exerciseId;
+
+    return currentExerciseNumber === lastCompletedNumber + 2;
+  };
+
   return (
     <div>
       {courseDetail?.chapters?.length == 0 ?
@@ -34,12 +66,12 @@ function CourseChapter({ loading, courseDetail }: Props) {
         </div>
         :
         <div className='p-5 border-4 rounded-2xl'>
-          {courseDetail?.chapters?.map((chapter, index) => (
-            <Accordion type="single" collapsible key={index}>
+          {courseDetail?.chapters?.map((chapter, chapterIndex) => (
+            <Accordion type="single" collapsible key={chapterIndex}>
               <AccordionItem value="item-1">
                 <AccordionTrigger className='p-3 hover:bg-zinc-800 font-game text-4xl'>
                   <div className='flex gap-10'>
-                    <h2 className='h-10 w-10 bg-zinc-700 flex items-center justify-center rounded-full'>{index + 1}</h2>
+                    <h2 className='h-10 w-10 bg-zinc-700 flex items-center justify-center rounded-full'>{chapterIndex + 1}</h2>
                     {chapter?.name}
                   </div>
                 </AccordionTrigger>
@@ -51,15 +83,23 @@ function CourseChapter({ loading, courseDetail }: Props) {
                           <h2 className='text-3xl'>Excercise {index + 1} </h2>
                           <h2 className='text-3xl'>{exc?.name}</h2>
                         </div>
-                        {/* <Button variant={'pixel'}>{exc?.xp}xp</Button> */}
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button variant={'pixelDisabled'}>???</Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p className='font-game text-lg'>Please Enroll first</p>
-                          </TooltipContent>
-                        </Tooltip>
+                        {isExerciseCompleted(chapter?.id, index + 1) ?
+                          <Button variant={'pixel'} className='bg-green-600'>Completed</Button>
+
+                          :
+                          EnableExercise(chapterIndex, index, chapter?.excercises?.length) ?
+                            <Button variant={'pixel'}>{exc?.xp}xp</Button>
+                            :
+
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant={'pixelDisabled'}>???</Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className='font-game text-lg'>Please Enroll first</p>
+                              </TooltipContent>
+                            </Tooltip>
+                        }
                       </div>
                     ))}
                   </div>
