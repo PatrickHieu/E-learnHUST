@@ -15,7 +15,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-
+import Link from 'next/link'
 type Props = {
   loading: boolean,
   courseDetail: Course | undefined
@@ -25,9 +25,9 @@ type Props = {
 
 function CourseChapter({ loading, courseDetail }: Props) {
 
-  const isExerciseCompleted = (chapterId: number, excerciseId: number) => {
+  const isExerciseCompleted = (chapterId: number, exerciseId: number) => {
     const completeChapters = courseDetail?.completedExercises;
-    const completeChapter = completeChapters?.find(item => (item.chapterId == chapterId && item.exerciseId == excerciseId));
+    const completeChapter = completeChapters?.find(item => (item.chapterId == chapterId && item.exerciseId == exerciseId));
     return completeChapter ? true : false;
   }
 
@@ -77,20 +77,20 @@ function CourseChapter({ loading, courseDetail }: Props) {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className='p-7 bg-zinc-900 rounded-xl'>
-                    {chapter?.excercises.map((exc, index) => (
+                    {chapter?.exercises.map((exc, index) => (
                       <div key={index} className='flex items-center justify-between mb-7'>
                         <div className='flex items-center gap-10 font-game'>
-                          <h2 className='text-3xl'>Excercise {index + 1} </h2>
+                          <h2 className='text-3xl'>exercise {index + 1} </h2>
                           <h2 className='text-3xl'>{exc?.name}</h2>
                         </div>
                         {isExerciseCompleted(chapter?.id, index + 1) ?
                           <Button variant={'pixel'} className='bg-green-600'>Completed</Button>
-
                           :
-                          EnableExercise(chapterIndex, index, chapter?.excercises?.length) ?
-                            <Button variant={'pixel'}>{exc?.xp}xp</Button>
+                          EnableExercise(chapterIndex, index, chapter?.exercises?.length) ?
+                            <Link href={'/courses/' + courseDetail?.courseId + '/' + chapter?.chapterId + '/' + exc?.slug}>
+                              <Button variant={'pixel'}>{exc?.xp}xp</Button>
+                            </Link>
                             :
-
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant={'pixelDisabled'}>???</Button>
