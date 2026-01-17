@@ -21,24 +21,23 @@ function CourseStatus({ courseDetail }: Props) {
   }, [courseDetail])
 
   const GetCounts = () => {
-    let totalExcercises = 0;
+    let totalexercises = 0;
     let totalXp = 0;
     courseDetail?.chapters?.forEach((chapter) => {
-      totalExcercises = totalExcercises + (chapter?.excercises?.length || 0);
-      chapter?.excercises?.forEach(exc => {
+      totalexercises = totalexercises + (chapter?.exercises?.length || 0);
+      chapter?.exercises?.forEach(exc => {
         totalXp = totalXp + exc?.xp;
       });
     })
 
     setCounts({
-      totalExce: totalExcercises,
+      totalExce: totalexercises,
       totalXp: totalXp
     })
   }
 
-  const UpdateProgress = (currentValue:number, totalValue:number) => {
-    if (currentValue && totalValue)
-    {
+  const UpdateProgress = (currentValue: number, totalValue: number) => {
+    if (currentValue && totalValue) {
       const perc = (currentValue * 100) / totalValue;
       return perc
     }
@@ -54,9 +53,9 @@ function CourseStatus({ courseDetail }: Props) {
           height={50}
         />
         <div className='w-full'>
-          <h2 className='flex justify-between text-2xl'>Excercises <span className='text-gray-400'>{courseDetail?.completedExercises?.length}/{counts?.totalExce}</span> </h2>
+          <h2 className='flex justify-between text-2xl'>exercises <span className='text-gray-400'>{courseDetail?.completedExercises?.length}/{counts?.totalExce}</span> </h2>
           {/* @ts-ignore */}
-          <Progress value={UpdateProgress(courseDetail?.completedExercises?.length??0, counts?.totalExce)} className='mt-2' />
+          <Progress value={UpdateProgress(courseDetail?.completedExercises?.length ?? 0, counts?.totalExce)} className='mt-2' />
         </div>
       </div>
 
@@ -68,7 +67,7 @@ function CourseStatus({ courseDetail }: Props) {
         <div className='w-full'>
           <h2 className='flex justify-between text-2xl'>XP Earned<span className='text-gray-400'>{courseDetail?.courseEnrolledInfo?.xpEarned}/{counts?.totalXp}</span> </h2>
           {/* @ts-ignore */}
-          <Progress value={UpdateProgress(courseDetail?.courseEnrolledInfo?.xpEarned??0, counts?.totalXp)} className='mt-2' />
+          <Progress value={UpdateProgress(courseDetail?.courseEnrolledInfo?.xpEarned ?? 0, counts?.totalXp)} className='mt-2' />
         </div>
       </div>
     </div>
