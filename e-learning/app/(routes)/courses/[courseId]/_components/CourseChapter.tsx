@@ -28,6 +28,7 @@ function CourseChapter({ loading, courseDetail }: Props) {
   const isExerciseCompleted = (chapterId: number, exerciseId: number) => {
     const completeChapters = courseDetail?.completedExercises;
     const completeChapter = completeChapters?.find(item => (item.chapterId == chapterId && item.exerciseId == exerciseId));
+    console.log('Check completed - chapterId:', chapterId, 'exerciseId:', exerciseId, 'completedExercises:', completeChapters, 'result:', !!completeChapter);
     return completeChapter ? true : false;
   }
 
@@ -83,14 +84,12 @@ function CourseChapter({ loading, courseDetail }: Props) {
                           <h2 className='text-3xl'>exercise {index + 1} </h2>
                           <h2 className='text-3xl'>{exc?.name}</h2>
                         </div>
-                        {isExerciseCompleted(chapter?.id, index + 1) ?
+                        {isExerciseCompleted(chapter?.chapterId, index + 1) ?
                           <Button variant={'pixel'} className='bg-green-600'>Completed</Button>
-                          :
-                          EnableExercise(chapterIndex, index, chapter?.exercises?.length) ?
+                          : courseDetail?.userEnrolled ?
                             <Link href={'/courses/' + courseDetail?.courseId + '/' + chapter?.chapterId + '/' + exc?.slug}>
                               <Button variant={'pixel'}>{exc?.xp}xp</Button>
-                            </Link>
-                            :
+                            </Link> :
                             <Tooltip>
                               <TooltipTrigger asChild>
                                 <Button variant={'pixelDisabled'}>???</Button>
