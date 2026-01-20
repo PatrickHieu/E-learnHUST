@@ -85,11 +85,11 @@ function Header() {
 
   return (
     <div className="p-4 max-w-7xl flex justify-between items-center w-full">
-      <div className="flex gap-2 items-center">
-        <Link href="/">
+      <div>
+        <Link href="/" className="flex gap-2 items-center">
           <Image src={"/logo.png"} alt="Logo" width={40} height={40} />
+          <h2 className="font-bold text-4xl font-game">Code Block</h2>
         </Link>
-        <h2 className="font-bold text-4xl font-game">Code Block</h2>
       </div>
 
       {/* NavBar */}
@@ -135,7 +135,7 @@ function Header() {
         </NavigationMenu>
         :
         <h2 className="text-2xl font-game">{params['exercise-slug']?.toString()?.replaceAll('-', ' ').toUpperCase()}</h2>
-        }
+      }
       {/* Sign up */}
       {!user ? (
         <Link href="/sign-in">
@@ -145,10 +145,13 @@ function Header() {
         </Link>
       ) : (
         <div className="flex gap-2 items-center">
-          <Button className="font-game text-2xl" variant={"pixel"}>
-            Dashboard
-          </Button>
+            <Link href="/dashboard">
+            <Button className="font-game text-2xl" variant={"pixel"}>
+              Dashboard
+            </Button>
+          </Link>
           <UserButton />
+
         </div>
       )}
     </div>

@@ -1,11 +1,14 @@
 import { db } from "@/config/db";
-import { CompletedExerciseTable, CourseChapterTable } from "@/config/schema";
+import { CompletedExerciseTable, CourseChapterTable, CoursesTable } from "@/config/schema";
 import { NextRequest, NextResponse } from "next/server";
 import { and, eq } from "drizzle-orm";
 import { ExercisesTable } from "@/config/schema";
 
 export async function POST(req: NextRequest) {
   const { courseId, chapterId, exerciseId } = await req.json();
+
+  const courseInfo = await db.select().from(CoursesTable)
+  .where(eq(CoursesTable.courseId, courseId));
 
   console.log("Exercise API Request:", { courseId, chapterId, exerciseId });
 
@@ -86,6 +89,7 @@ export async function POST(req: NextRequest) {
     ...courseResult[0],
     exerciseData: exerciseData,
     completedExercise: completedExercise,
+    editorType: courseInfo[0]?.editorType
   };
 
   console.log("Final Response exerciseData:", response.exerciseData);
