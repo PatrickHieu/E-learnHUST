@@ -49,7 +49,12 @@ export type exercise = {
     difficulty: string
 }
 
-function CourseList() {
+type Props = {
+    smallerCard?: boolean,
+    maxLimit?: number,
+}
+
+function CourseList({ smallerCard=false, maxLimit = 100}: Props) {
 
     const [coursesList, setCoursesList] = useState<Course[]>([]);
     const [loading, setLoading] = useState(false);
@@ -67,11 +72,11 @@ function CourseList() {
 
     return (
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 mt-3'>
-            {coursesList.map((course, index) => (
+            {coursesList.map((course, index) => maxLimit && maxLimit > index &&(
                 <Link href={'/courses/' + course?.courseId} key={index}>
                     <div className='border-4 rounded-xl hover:bg-zinc-900 cursor-pointer'>
                         <Image src={course?.bannerImage.trimEnd()} alt={course?.title} width={400} height={400}
-                            className='w-full h-[200px] object-cover rounded-t-lg'
+                            className={`w-full object-cover rounded-t-lg ${smallerCard ? 'h-[120px]' : 'h-[200px]'}`}
                         />
                         <div className='p-4'>
                             <h2 className='font-game text-2xl'>

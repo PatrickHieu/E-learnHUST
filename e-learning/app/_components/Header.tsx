@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use } from "react";
+import React, { use, useEffect } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -18,69 +18,82 @@ import {
 } from "@/components/ui/navigation-menu";
 import { useUser, UserButton } from "@clerk/nextjs";
 import { usePathname } from "next/navigation";
+import axios from "axios";
+import { useState } from "react";
+import { Course } from '../(routes)/courses/_components/CourseList'
 
-const courses = [
-  {
-    id: 1,
-    name: "HTML",
-    desc: "Learn the fundamentals of HTML and build the structure of modern web pages.",
-    path: "/course/1/detail",
-  },
-  {
-    id: 2,
-    name: "CSS",
-    desc: "Master CSS to style and design responsive, visually appealing web layouts.",
-    path: "/course/2/detail",
-  },
-  {
-    id: 3,
-    name: "React",
-    desc: "Build dynamic and interactive web applications using the React JavaScript library.",
-    path: "/course/3/detail",
-  },
-  {
-    id: 4,
-    name: "React Advanced",
-    desc: "Deep dive into advanced React concepts including hooks, state management, performance optimization, and architectural patterns.",
-    path: "/course/4/detail",
-  },
-  {
-    id: 5,
-    name: "Python",
-    desc: "Learn Python programming from basics to intermediate level, covering logic building, functions, and real-world applications.",
-    path: "/course/5/detail",
-  },
-  {
-    id: 6,
-    name: "Python Advanced",
-    desc: "Master advanced Python concepts such as OOP, modules, APIs, data processing, and automation.",
-    path: "/course/6/detail",
-  },
-  {
-    id: 7,
-    name: "Generative AI",
-    desc: "Explore prompt engineering, LLMs, embeddings, image generation, and build GenAI-powered applications.",
-    path: "/course/7/detail",
-  },
-  {
-    id: 8,
-    name: "Machine Learning",
-    desc: "Understand ML concepts, algorithms, data preprocessing, model training, evaluation, and deployment.",
-    path: "/course/8/detail",
-  },
-  {
-    id: 9,
-    name: "JavaScript",
-    desc: "Learn core JavaScript concepts, asynchronous programming, DOM manipulation, and modern ES6+ features.",
-    path: "/course/9/detail",
-  },
-];
+// const courses = [
+//   {
+//     id: 1,
+//     name: "HTML",
+//     desc: "Learn the fundamentals of HTML and build the structure of modern web pages.",
+//     path: "/course/1/detail",
+//   },
+//   {
+//     id: 2,
+//     name: "CSS",
+//     desc: "Master CSS to style and design responsive, visually appealing web layouts.",
+//     path: "/course/2/detail",
+//   },
+//   {
+//     id: 3,
+//     name: "React",
+//     desc: "Build dynamic and interactive web applications using the React JavaScript library.",
+//     path: "/course/3/detail",
+//   },
+//   {
+//     id: 4,
+//     name: "React Advanced",
+//     desc: "Deep dive into advanced React concepts including hooks, state management, performance optimization, and architectural patterns.",
+//     path: "/course/4/detail",
+//   },
+//   {
+//     id: 5,
+//     name: "Python",
+//     desc: "Learn Python programming from basics to intermediate level, covering logic building, functions, and real-world applications.",
+//     path: "/course/5/detail",
+//   },
+//   {
+//     id: 6,
+//     name: "Python Advanced",
+//     desc: "Master advanced Python concepts such as OOP, modules, APIs, data processing, and automation.",
+//     path: "/course/6/detail",
+//   },
+//   {
+//     id: 7,
+//     name: "Generative AI",
+//     desc: "Explore prompt engineering, LLMs, embeddings, image generation, and build GenAI-powered applications.",
+//     path: "/course/7/detail",
+//   },
+//   {
+//     id: 8,
+//     name: "Machine Learning",
+//     desc: "Understand ML concepts, algorithms, data preprocessing, model training, evaluation, and deployment.",
+//     path: "/course/8/detail",
+//   },
+//   {
+//     id: 9,
+//     name: "JavaScript",
+//     desc: "Learn core JavaScript concepts, asynchronous programming, DOM manipulation, and modern ES6+ features.",
+//     path: "/course/9/detail",
+//   },
+// ];
 
 function Header() {
   const { user } = useUser();
   const path = usePathname();
   const params = useParams();
+  const [courses, setCourses] = useState<Course[]>();
 
+  const GetCourse = async () => {
+    const result = await axios.get('/api/course')
+    console.log(result.data);
+    setCourses(result.data);
+  }
+
+  useEffect(() => {
+    GetCourse();
+  }, []);
 
 
   return (
@@ -93,7 +106,7 @@ function Header() {
       </div>
 
       {/* NavBar */}
-      {!params['exercise-slug'] ?
+      {!params['exercise-slug'] && courses ?
         <NavigationMenu>
           <NavigationMenuList className="gap-8">
             <NavigationMenuItem>
@@ -104,13 +117,14 @@ function Header() {
                 <NavigationMenuContent>
                   <ul className="grid md:grid-cols-2 gap-2 sm:w-100 md:w-125 lg:w-150">
                     {courses.map((course, index) => (
-                      <div
-                        key={index}
-                        className="p-2 hover:bg-accent rounded-xl cursor-pointer"
-                      >
-                        <h2 className="font-medium">{course.name}</h2>
-                        <p className="text-sm text-gray-400">{course.desc}</p>
-                      </div>
+                      <Link href={'/courses/' + course.courseId} key={index}>
+                        <div
+                          className="p-2 hover:bg-accent rounded-xl cursor-pointer"
+                        >
+                          <h2 className="font-medium">{course?.title}</h2>
+                          <p className="text-sm text-gray-400">{course?.desc}</p>
+                        </div>
+                      </Link>
                     ))}
                   </ul>
                 </NavigationMenuContent>
@@ -145,7 +159,7 @@ function Header() {
         </Link>
       ) : (
         <div className="flex gap-2 items-center">
-            <Link href="/dashboard">
+          <Link href="/dashboard">
             <Button className="font-game text-2xl" variant={"pixel"}>
               Dashboard
             </Button>
