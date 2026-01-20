@@ -17,7 +17,8 @@ export const CoursesTable = pgTable("courses", {
     desc: varchar().notNull(),
     bannerImage: varchar().notNull(),
     level: varchar().default("beginner"),
-    tags: varchar()
+    tags: varchar(),
+    editorType: varchar(),
 });
 
 export const CourseChapterTable = pgTable("courseChapters", {
