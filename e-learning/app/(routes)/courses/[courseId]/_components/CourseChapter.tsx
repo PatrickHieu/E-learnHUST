@@ -2,6 +2,7 @@ import React from 'react'
 import { Course } from '../../_components/CourseList'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
+import { useAuth } from '@clerk/nextjs'
 
 import {
   Accordion,
@@ -31,6 +32,9 @@ function CourseChapter({ loading, courseDetail }: Props) {
     console.log('Check completed - chapterId:', chapterId, 'exerciseId:', exerciseId, 'completedExercises:', completeChapters, 'result:', !!completeChapter);
     return completeChapter ? true : false;
   }
+
+  const { has } = useAuth();
+  const hasProAccess = has && has({ plan: 'pro' })
 
   const EnableExercise = (
     chapterIndex: number,
@@ -71,9 +75,12 @@ function CourseChapter({ loading, courseDetail }: Props) {
             <Accordion type="single" collapsible key={chapterIndex}>
               <AccordionItem value="item-1">
                 <AccordionTrigger className='p-3 hover:bg-zinc-800 font-game text-4xl'>
-                  <div className='flex gap-10'>
-                    <h2 className='h-10 w-10 bg-zinc-700 flex items-center justify-center rounded-full'>{chapterIndex + 1}</h2>
-                    {chapter?.name}
+                  <div className='flex items-center justify-between w-full'>
+                    <div className='flex gap-10'>
+                      <h2 className='h-10 w-10 bg-zinc-700 flex items-center justify-center rounded-full'>{chapterIndex + 1}</h2>
+                      {chapter?.name}
+                    </div>
+                    {!hasProAccess && chapterIndex >= 2 && <h2 className='font-game text-3xl text-yellow-400'>Pro</h2>}
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -86,18 +93,23 @@ function CourseChapter({ loading, courseDetail }: Props) {
                         </div>
                         {isExerciseCompleted(chapter?.chapterId, index + 1) ?
                           <Button variant={'pixel'} className='bg-green-600'>Completed</Button>
-                          : courseDetail?.userEnrolled ?
+                          :
+                          (courseDetail?.userEnrolled && (!hasProAccess && chapterIndex < 2)) ?
                             <Link href={'/courses/' + courseDetail?.courseId + '/' + chapter?.chapterId + '/' + exc?.slug}>
                               <Button variant={'pixel'}>{exc?.xp}xp</Button>
                             </Link> :
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button variant={'pixelDisabled'}>???</Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p className='font-game text-lg'>Please Enroll first</p>
-                              </TooltipContent>
-                            </Tooltip>
+                            hasProAccess && courseDetail?.userEnrolled ?
+                              <Link href={'/courses/' + courseDetail?.courseId + '/' + chapter?.chapterId + '/' + exc?.slug}>
+                                <Button variant={'pixel'}>{exc?.xp}xp</Button>
+                              </Link> :
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant={'pixelDisabled'}>???</Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p className='font-game text-lg'>Please Enroll first</p>
+                                </TooltipContent>
+                              </Tooltip>
                         }
                       </div>
                     ))}
