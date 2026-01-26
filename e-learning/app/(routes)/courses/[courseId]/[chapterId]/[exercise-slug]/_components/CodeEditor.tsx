@@ -22,6 +22,17 @@ type Props = {
     refreshData?: () => void,
 }
 
+// Valid Sandpack templates
+type ValidTemplate = 'react' | 'vue' | 'svelte' | 'vanilla';
+
+const getValidTemplate = (editorType?: string): ValidTemplate => {
+    const validTemplates: ValidTemplate[] = ['react', 'vue', 'svelte', 'vanilla'];
+    if (editorType && validTemplates.includes(editorType as ValidTemplate)) {
+        return editorType as ValidTemplate;
+    }
+    return 'react'; // Default to react
+}
+
 const CodeEditorChildren = ({ onCompleteExercise, isCompleted }: any) => {
 
     const { sandpack } = useSandpack();
@@ -84,7 +95,7 @@ function CodeEditor({ courseExerciseData, loading, refreshData }: Props) {
     return (
         <div>
             {/* @ts-ignore */}
-            <SandpackProvider template={courseExerciseData?.editorType ?? 'react'}
+            <SandpackProvider template={getValidTemplate(courseExerciseData?.editorType)}
                 theme={nightOwl}
                 style={{
                     height: '100vh'

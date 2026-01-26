@@ -83,12 +83,23 @@ function Header() {
   const { user } = useUser();
   const path = usePathname();
   const params = useParams();
-  const [courses, setCourses] = useState<Course[]>();
+  const [courses, setCourses] = useState<Course[]>([]);
 
   const GetCourse = async () => {
-    const result = await axios.get('/api/course')
-    console.log(result.data);
-    setCourses(result.data);
+    try {
+      const result = await axios.get('/api/course')
+      console.log("API Response:", result.data);
+      // Ensure we set an array, not undefined or null
+      if (Array.isArray(result.data)) {
+        setCourses(result.data);
+      } else {
+        console.warn("API response is not an array:", result.data);
+        setCourses([]);
+      }
+    } catch (error) {
+      console.error("Error fetching courses:", error);
+      setCourses([]);
+    }
   }
 
   useEffect(() => {
@@ -106,7 +117,7 @@ function Header() {
       </div>
 
       {/* NavBar */}
-      {!params['exercise-slug'] && courses ?
+      {!params['exercise-slug'] && Array.isArray(courses) && courses.length > 0 ?
         <NavigationMenu>
           <NavigationMenuList className="gap-8">
             <NavigationMenuItem>
@@ -116,7 +127,7 @@ function Header() {
                 </Link>
                 <NavigationMenuContent>
                   <ul className="grid md:grid-cols-2 gap-2 sm:w-100 md:w-125 lg:w-150">
-                    {courses.map((course, index) => (
+                    {courses && courses.map((course, index) => (
                       <Link href={'/courses/' + course.courseId} key={index}>
                         <div
                           className="p-2 hover:bg-accent rounded-xl cursor-pointer"
