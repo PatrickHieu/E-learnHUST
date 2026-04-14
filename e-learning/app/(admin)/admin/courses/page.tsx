@@ -10,8 +10,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Edit, Trash2, Plus } from "lucide-react";
+import { Edit, Trash2, Plus, ListTree } from "lucide-react";
 import Image from "next/image";
+import DeleteCourseButton from "./DeleteCourseButton";
 
 export default async function AdminCoursesPage() {
   const courses = await db.select().from(CoursesTable);
@@ -72,12 +73,17 @@ export default async function AdminCoursesPage() {
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
-                      <Button variant="outline" size="icon" className="bg-transparent border-zinc-700 hover:bg-zinc-700">
-                        <Edit className="w-4 h-4 text-blue-400" />
-                      </Button>
-                      <Button variant="outline" size="icon" className="bg-transparent border-zinc-700 hover:bg-red-900/50">
-                        <Trash2 className="w-4 h-4 text-red-400" />
-                      </Button>
+                      <Link href={`/admin/courses/${course.courseId}/edit`}>
+                        <Button variant="outline" size="icon" className="bg-transparent border-zinc-700 hover:bg-zinc-700">
+                          <Edit className="w-4 h-4 text-blue-400" />
+                        </Button>
+                      </Link>
+                      <DeleteCourseButton courseId={course.courseId} />
+                      <Link href={`/admin/courses/${course.courseId}`}>
+                        <Button variant="outline" size="icon" className="bg-transparent border-zinc-700 hover:bg-zinc-700">
+                          <ListTree className="w-4 h-4 text-green-400" />
+                        </Button>
+                      </Link>
                     </div>
                   </TableCell>
                 </TableRow>

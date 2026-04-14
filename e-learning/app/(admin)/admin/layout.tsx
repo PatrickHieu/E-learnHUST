@@ -22,6 +22,7 @@ export default async function AdminLayout({
                 <nav className="flex flex-col gap-2 flex-1">
                     <Link href="/admin" className="p-3 hover:bg-zinc-900 rounded text-lg">Overview</Link>
                     <Link href="/admin/courses" className="p-3 hover:bg-zinc-900 rounded text-lg">Courses</Link>
+                    <Link href="/admin/users" className="p-3 hover:bg-zinc-900 rounded text-lg">Users</Link>
                 </nav>
 
                 {/* Nút User & Thoát về Dashboard */}
