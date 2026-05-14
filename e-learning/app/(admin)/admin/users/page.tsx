@@ -37,8 +37,8 @@ export default async function AdminUsersPage() {
                                     {user.points || 0} ⭐
                                 </TableCell>
                                 <TableCell className="text-center">
-                                    <Badge variant={user.subcription ? "default" : "outline"} className="font-game">
-                                        {user.subcription || "FREE"}
+                                    <Badge variant={user.subscription ? "default" : "outline"} className="font-game">
+                                        {user.subscription || "FREE"}
                                     </Badge>
                                 </TableCell>
                             </TableRow>

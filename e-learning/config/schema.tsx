@@ -7,7 +7,7 @@ export const usersTable = pgTable("users", {
     name: varchar({ length: 255 }).notNull(),
     email: varchar({ length: 255 }).notNull().unique(),
     points: integer().default(0),
-    subcription: varchar()
+    subscription: varchar()
 });
 
 export const CoursesTable = pgTable("courses", {
