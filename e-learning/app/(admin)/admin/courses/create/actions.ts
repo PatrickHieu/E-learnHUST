@@ -2,6 +2,7 @@
 
 import { db } from "@/config/db";
 import { CoursesTable } from "@/config/schema";
+import { max } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
@@ -14,10 +15,13 @@ export async function createCourseAction(formData: FormData) {
   const editorType = formData.get("editorType") as string;
   const unlockCost = Number(formData.get("unlockCost") || 0);
 
-  // Tạo một courseId ngẫu nhiên (hoặc bạn có thể tự thiết lập logic tăng dần)
-  const courseId = Math.floor(Math.random() * 1000000);
+  // Monotonic courseId: MAX(courseId) + 1. The previous Math.random() approach
+  // would eventually collide with the UNIQUE constraint.
+  const [{ value: currentMax }] = await db
+    .select({ value: max(CoursesTable.courseId) })
+    .from(CoursesTable);
+  const courseId = (currentMax ?? 0) + 1;
 
-  // 2. Lưu vào Neon Database
   await db.insert(CoursesTable).values({
     courseId,
     title,
@@ -26,11 +30,9 @@ export async function createCourseAction(formData: FormData) {
     level,
     tags,
     editorType,
+    unlockCost,
   });
 
-  // 3. Xóa cache của trang danh sách để nó cập nhật dữ liệu mới nhất
   revalidatePath("/admin/courses");
-
-  // 4. Chuyển hướng người dùng về lại trang danh sách khóa học
   redirect("/admin/courses");
 }
