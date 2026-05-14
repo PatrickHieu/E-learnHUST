@@ -13,10 +13,9 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const courseId = searchParams.get("courseId") || searchParams.get("courseid");
   const user = await currentUser();
+  const userId = user?.id;
 
-  const userEmail = user?.primaryEmailAddress?.emailAddress;
-
-  if (!userEmail) {
+  if (!userId) {
     return NextResponse.json(
       { error: "User not authenticated" },
       { status: 401 },
@@ -39,10 +38,7 @@ export async function GET(req: NextRequest) {
       .from(EnrolledCourseTable)
       //@ts-ignore
       .where(and(eq(EnrolledCourseTable?.courseId, courseId),
-          eq(
-            EnrolledCourseTable?.userId,
-            user?.primaryEmailAddress?.emailAddress,
-          ),
+          eq(EnrolledCourseTable.userId, userId),
         ),
       );
 
@@ -53,10 +49,7 @@ export async function GET(req: NextRequest) {
       .from(CompletedExerciseTable)
       //@ts-ignore
       .where( and(eq(CompletedExerciseTable.courseId, courseId),
-          eq(
-            CompletedExerciseTable.userId,
-            user?.primaryEmailAddress?.emailAddress,
-          ),
+          eq(CompletedExerciseTable.userId, userId),
         ),
       )
       .orderBy(
@@ -76,7 +69,7 @@ export async function GET(req: NextRequest) {
     const enrolledCourses = await db
       .select()
       .from(EnrolledCourseTable)
-      .where(eq(EnrolledCourseTable.userId, userEmail));
+      .where(eq(EnrolledCourseTable.userId, userId));
 
     if (enrolledCourses.length === 0) {
       return NextResponse.json([]);
@@ -106,7 +99,7 @@ export async function GET(req: NextRequest) {
       .from(CompletedExerciseTable)
       //@ts-ignore
       .where(and(inArray(CompletedExerciseTable.courseId, courseIds),
-          eq(CompletedExerciseTable.userId, userEmail),
+          eq(CompletedExerciseTable.userId, userId),
         ),
       )
       .orderBy(

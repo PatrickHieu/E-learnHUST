@@ -13,9 +13,10 @@ type ExerciseSpec = { name: string; slug: string; xp: number; difficulty: string
 
 export async function POST(req: NextRequest) {
   const user = await currentUser();
+  const userId = user?.id;
   const userEmail = user?.primaryEmailAddress?.emailAddress;
 
-  if (!userEmail) {
+  if (!userId || !userEmail) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     .from(CompletedExerciseTable)
     .where(
       and(
-        eq(CompletedExerciseTable.userId, userEmail),
+        eq(CompletedExerciseTable.userId, userId),
         eq(CompletedExerciseTable.courseId, courseId),
         eq(CompletedExerciseTable.chapterId, chapterId),
         eq(CompletedExerciseTable.exerciseId, exerciseId),
@@ -79,7 +80,7 @@ export async function POST(req: NextRequest) {
   const [record] = await db
     .insert(CompletedExerciseTable)
     .values({
-      userId: userEmail,
+      userId,
       courseId,
       chapterId,
       exerciseId,
@@ -94,10 +95,13 @@ export async function POST(req: NextRequest) {
     .where(
       and(
         eq(EnrolledCourseTable.courseId, courseId),
-        eq(EnrolledCourseTable.userId, userEmail),
+        eq(EnrolledCourseTable.userId, userId),
       ),
     );
 
+  // usersTable is keyed by email (its unique identity column), so we still
+  // look up the user record by email here even though FK tables use Clerk's
+  // user.id.
   await db
     .update(usersTable)
     .set({ points: sql`${usersTable.points} + ${xpEarned}` })

@@ -6,9 +6,9 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   const user = await currentUser();
-  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const userId = user?.id;
 
-  if (!userEmail) {
+  if (!userId) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
     .from(EnrolledCourseTable)
     .where(
       and(
-        eq(EnrolledCourseTable.userId, userEmail),
+        eq(EnrolledCourseTable.userId, userId),
         eq(EnrolledCourseTable.courseId, courseId),
       ),
     )
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     .insert(EnrolledCourseTable)
     .values({
       courseId,
-      userId: userEmail,
+      userId,
       xpEarned: 0,
     })
     .returning();
