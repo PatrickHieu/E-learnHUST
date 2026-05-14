@@ -74,7 +74,6 @@ function CodeEditor({ courseExerciseData, loading, refreshData }: Props) {
                 courseId: courseExerciseData?.courseId,
                 chapterId: courseExerciseData?.chapterId,
                 exerciseId: exerciseIndex + 1,
-                xpEarned: courseExerciseData?.exercises[exerciseIndex]?.xp
             })
             console.log(result);
             toast.success('Exercise marked as completed!');
