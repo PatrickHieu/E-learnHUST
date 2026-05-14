@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/config/db";
 import { ExercisesTable } from "@/config/schema";
+import { checkRole } from "@/lib/checkRole";
 
 
 const DATA = 
@@ -110,14 +111,20 @@ const DATA =
 ]
 
 export async function GET(req: NextRequest) {
-    DATA.forEach(async (item) => {
-        await db.insert(ExercisesTable).values({
-            courseId: item?.courseId,
-            chapterId: item?.chapterId,
-            exerciseId: item?.exerciseId,
-            exerciseName: item?.exerciseName,
-            exerciseContent: item?.exercisesContent,
-        })
-    })
+    if (!(await checkRole("admin"))) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    await Promise.all(
+        DATA.map((item) =>
+            db.insert(ExercisesTable).values({
+                courseId: item?.courseId,
+                chapterId: item?.chapterId,
+                exerciseId: item?.exerciseId,
+                exerciseName: item?.exerciseName,
+                exerciseContent: item?.exercisesContent,
+            }),
+        ),
+    );
     return NextResponse.json('Success')
 }
