@@ -13,6 +13,7 @@ export type Course = {
     level: string,
     bannerImage: string,
     tag: string,
+    unlockCost?: number,
     chapters?: Chapter[],
     userEnrolled?: boolean,
     courseEnrolledInfo?: CourseEnrolledInfo,
