@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "migrate:lessons": "tsx scripts/migrate-exercises-to-lessons.ts"
+    "start": "next start"
   },
   "dependencies": {
     "@clerk/elements": "^0.24.2",
