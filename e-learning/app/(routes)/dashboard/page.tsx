@@ -6,6 +6,7 @@ import InviteFriend from "./_components/InviteFriend"
 import UserStatus from "./_components/UserStatus"
 import Upgrade from "./_components/Upgrade"
 import ExploreMoreCourses from "./_components/ExploreMoreCourses"
+import TrendingCourses from "./_components/TrendingCourses"
 
 function Dashboard() {
     return (
@@ -13,6 +14,7 @@ function Dashboard() {
             <div className="grid grid-cols-3 gap-7">
                 <div className="col-span-2">
                     <WelcomeBanner />
+                    <TrendingCourses />
                     <EnrolledCourses />
                     <ExploreMoreCourses />
                     <ExploreMore />
