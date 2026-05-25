@@ -16,20 +16,12 @@ export type Course = {
     chapters?: Chapter[],
     userEnrolled?: boolean,
     courseEnrolledInfo?: CourseEnrolledInfo,
-    completedExercises?: CompletedExercises[]
-}
-
-export type CompletedExercises = {
-    chapterId: number,
-    courseId: number,
-    exerciseId: number,
-
+    completedLessonIds?: number[]
 }
 
 export type CourseEnrolledInfo = {
     xpEarned: number,
     enrolledDate: any,
-
 }
 
 export type Chapter = {
@@ -38,15 +30,18 @@ export type Chapter = {
     desc: string,
     name: string,
     id: number,
-    exercises: exercise[]
-
+    lessons: Lesson[]
 }
 
-export type exercise = {
-    name: string,
+export type Lesson = {
+    id: number,
+    courseId: number,
+    chapterId: number,
     slug: string,
+    orderIndex: number,
+    type: string, // 'video' | 'pdf' | 'exercise'
+    title: string,
     xp: number,
-    difficulty: string
 }
 
 type Props = {

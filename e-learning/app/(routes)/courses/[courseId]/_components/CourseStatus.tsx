@@ -12,7 +12,7 @@ type Props = {
 function CourseStatus({ courseDetail }: Props) {
 
   const [counts, setCounts] = useState<{
-    totalExce: number,
+    totalLessons: number,
     totalXp: number,
   }>()
 
@@ -21,53 +21,46 @@ function CourseStatus({ courseDetail }: Props) {
   }, [courseDetail])
 
   const GetCounts = () => {
-    let totalexercises = 0;
+    let totalLessons = 0;
     let totalXp = 0;
     courseDetail?.chapters?.forEach((chapter) => {
-      totalexercises = totalexercises + (chapter?.exercises?.length || 0);
-      chapter?.exercises?.forEach(exc => {
-        totalXp = totalXp + exc?.xp;
+      totalLessons += chapter?.lessons?.length ?? 0;
+      chapter?.lessons?.forEach(lesson => {
+        totalXp += lesson?.xp ?? 0;
       });
     })
 
-    setCounts({
-      totalExce: totalexercises,
-      totalXp: totalXp
-    })
+    setCounts({ totalLessons, totalXp })
   }
 
-  const UpdateProgress = (currentValue: number, totalValue: number) => {
-    if (currentValue && totalValue) {
-      const perc = (currentValue * 100) / totalValue;
-      return perc
-    }
-    return 0;
-  }
+  const pct = (current: number, total: number) =>
+    current && total ? (current * 100) / total : 0;
+
+  const completedCount = courseDetail?.completedLessonIds?.length ?? 0;
+  const totalLessons = counts?.totalLessons ?? 0;
+  const xpEarned = courseDetail?.courseEnrolledInfo?.xpEarned ?? 0;
+  const totalXp = counts?.totalXp ?? 0;
 
   return (
     <div className='font-game p-4 border-4 rounded-xl w-full'>
       <h2 className='text-3xl '>Course Progress</h2>
       <div className='flex items-center gap-5 mt-4'>
-        <Image src={'/book.png'} alt='book'
-          width={50}
-          height={50}
-        />
+        <Image src={'/book.png'} alt='book' width={50} height={50} />
         <div className='w-full'>
-          <h2 className='flex justify-between text-2xl'>exercises <span className='text-gray-400'>{courseDetail?.completedExercises?.length}/{counts?.totalExce}</span> </h2>
-          {/* @ts-ignore */}
-          <Progress value={UpdateProgress(courseDetail?.completedExercises?.length ?? 0, counts?.totalExce)} className='mt-2' />
+          <h2 className='flex justify-between text-2xl'>
+            Lessons <span className='text-gray-400'>{completedCount}/{totalLessons}</span>
+          </h2>
+          <Progress value={pct(completedCount, totalLessons)} className='mt-2' />
         </div>
       </div>
 
       <div className='flex items-center gap-5 mt-4'>
-        <Image src={'/star.png'} alt='book'
-          width={50}
-          height={50}
-        />
+        <Image src={'/star.png'} alt='star' width={50} height={50} />
         <div className='w-full'>
-          <h2 className='flex justify-between text-2xl'>XP Earned<span className='text-gray-400'>{courseDetail?.courseEnrolledInfo?.xpEarned}/{counts?.totalXp}</span> </h2>
-          {/* @ts-ignore */}
-          <Progress value={UpdateProgress(courseDetail?.courseEnrolledInfo?.xpEarned ?? 0, counts?.totalXp)} className='mt-2' />
+          <h2 className='flex justify-between text-2xl'>
+            XP Earned<span className='text-gray-400'>{xpEarned}/{totalXp}</span>
+          </h2>
+          <Progress value={pct(xpEarned, totalXp)} className='mt-2' />
         </div>
       </div>
     </div>

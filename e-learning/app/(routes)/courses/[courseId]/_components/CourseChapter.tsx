@@ -3,6 +3,7 @@ import { Course } from '../../_components/CourseList'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@clerk/nextjs'
+import { Video, FileText, Code2 } from 'lucide-react'
 
 import {
   Accordion,
@@ -17,49 +18,23 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import Link from 'next/link'
+
 type Props = {
   loading: boolean,
   courseDetail: Course | undefined
 }
 
-
+function lessonIcon(type: string) {
+  if (type === 'video') return <Video className="w-5 h-5 text-pink-300" />;
+  if (type === 'pdf') return <FileText className="w-5 h-5 text-blue-300" />;
+  return <Code2 className="w-5 h-5 text-green-300" />;
+}
 
 function CourseChapter({ loading, courseDetail }: Props) {
 
-  const isExerciseCompleted = (chapterId: number, exerciseId: number) => {
-    const completeChapters = courseDetail?.completedExercises;
-    const completeChapter = completeChapters?.find(item => (item.chapterId == chapterId && item.exerciseId == exerciseId));
-    console.log('Check completed - chapterId:', chapterId, 'exerciseId:', exerciseId, 'completedExercises:', completeChapters, 'result:', !!completeChapter);
-    return completeChapter ? true : false;
-  }
-
   const { has } = useAuth();
-  const hasProAccess = has && has({ plan: 'pro' })
-
-  const EnableExercise = (
-    chapterIndex: number,
-    exerciseIndex: number,
-    chapterExercisesLength: number
-  ) => {
-    const completed = courseDetail?.completedExercises;
-
-    // If nothing is completed, enable FIRST exercise ONLY
-    if (!completed || completed.length === 0) {
-      return chapterIndex === 0 && exerciseIndex === 0;
-    }
-
-    // last completed
-    const last = completed[completed.length - 1];
-
-    // Convert to global exercise number
-    const currentExerciseNumber =
-      chapterIndex * chapterExercisesLength + exerciseIndex + 1;
-
-    const lastCompletedNumber =
-      (last.chapterId - 1) * chapterExercisesLength + last.exerciseId;
-
-    return currentExerciseNumber === lastCompletedNumber + 2;
-  };
+  const hasProAccess = has && has({ plan: 'pro' });
+  const completedIds = courseDetail?.completedLessonIds ?? [];
 
   return (
     <div>
@@ -67,7 +42,6 @@ function CourseChapter({ loading, courseDetail }: Props) {
         <div>
           <Skeleton className='w-full h-[100px] rounded=xl' />
           <Skeleton className='w-full h-[100px] mt-5 rounded=xl' />
-
         </div>
         :
         <div className='p-5 border-4 rounded-2xl'>
@@ -85,34 +59,39 @@ function CourseChapter({ loading, courseDetail }: Props) {
                 </AccordionTrigger>
                 <AccordionContent>
                   <div className='p-7 bg-zinc-900 rounded-xl'>
-                    {chapter?.exercises.map((exc, index) => (
-                      <div key={index} className='flex items-center justify-between mb-7'>
-                        <div className='flex items-center gap-10 font-game'>
-                          <h2 className='text-3xl'>exercise {index + 1} </h2>
-                          <h2 className='text-3xl'>{exc?.name}</h2>
+                    {chapter?.lessons?.map((lesson, index) => {
+                      const isCompleted = completedIds.includes(lesson.id);
+                      const isLocked = !courseDetail?.userEnrolled || (!hasProAccess && chapterIndex >= 2);
+                      return (
+                        <div key={lesson.id} className='flex items-center justify-between mb-7'>
+                          <div className='flex items-center gap-10 font-game'>
+                            <h2 className='text-3xl flex items-center gap-3'>
+                              {lessonIcon(lesson.type)}
+                              <span className='text-zinc-400 text-2xl uppercase'>{lesson.type}</span>
+                            </h2>
+                            <h2 className='text-3xl'>{lesson.title}</h2>
+                          </div>
+                          {isCompleted ? (
+                            <Button variant={'pixel'} className='bg-green-600'>Completed</Button>
+                          ) : isLocked ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button variant={'pixelDisabled'}>???</Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className='font-game text-lg'>
+                                  {!courseDetail?.userEnrolled ? 'Please Enroll first' : 'Pro only'}
+                                </p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Link href={`/courses/${courseDetail?.courseId}/${chapter?.chapterId}/${lesson.slug}`}>
+                              <Button variant={'pixel'}>{lesson.xp}xp</Button>
+                            </Link>
+                          )}
                         </div>
-                        {isExerciseCompleted(chapter?.chapterId, index + 1) ?
-                          <Button variant={'pixel'} className='bg-green-600'>Completed</Button>
-                          :
-                          (courseDetail?.userEnrolled && (!hasProAccess && chapterIndex < 2)) ?
-                            <Link href={'/courses/' + courseDetail?.courseId + '/' + chapter?.chapterId + '/' + exc?.slug}>
-                              <Button variant={'pixel'}>{exc?.xp}xp</Button>
-                            </Link> :
-                            hasProAccess && courseDetail?.userEnrolled ?
-                              <Link href={'/courses/' + courseDetail?.courseId + '/' + chapter?.chapterId + '/' + exc?.slug}>
-                                <Button variant={'pixel'}>{exc?.xp}xp</Button>
-                              </Link> :
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button variant={'pixelDisabled'}>???</Button>
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                  <p className='font-game text-lg'>Please Enroll first</p>
-                                </TooltipContent>
-                              </Tooltip>
-                        }
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </AccordionContent>
               </AccordionItem>
