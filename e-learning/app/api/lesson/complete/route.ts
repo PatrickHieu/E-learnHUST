@@ -7,7 +7,12 @@ import {
   EnrolledCourseTable,
   LessonsTable,
   usersTable,
+  type ExerciseLessonContent,
 } from "@/config/schema";
+import {
+  lessonRequiresValidation,
+  validateExerciseSubmission,
+} from "@/lib/lesson-validation";
 
 export async function POST(req: NextRequest) {
   const user = await currentUser();
@@ -18,7 +23,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
-  const { lessonId } = await req.json();
+  const { lessonId, submission } = await req.json();
 
   if (typeof lessonId !== "number") {
     return NextResponse.json(
@@ -37,6 +42,25 @@ export async function POST(req: NextRequest) {
 
   if (!lesson) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+  }
+
+  // Exercise lessons may require the submission to match a regex /
+  // expectedOutput before crediting completion. Server re-validates because
+  // the client check can be bypassed.
+  if (lesson.type === "exercise") {
+    const exerciseContent = lesson.content as ExerciseLessonContent;
+    if (lessonRequiresValidation(exerciseContent)) {
+      const result = validateExerciseSubmission(
+        exerciseContent,
+        typeof submission === "string" ? submission : "",
+      );
+      if (!result.pass) {
+        return NextResponse.json(
+          { error: "Submission did not pass validation", reason: result.reason },
+          { status: 422 },
+        );
+      }
+    }
   }
 
   const xpEarned = lesson.xp ?? 0;

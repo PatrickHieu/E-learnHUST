@@ -14,6 +14,7 @@ import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import { toast } from 'sonner';
 import type { ExerciseLessonContent } from '@/config/schema';
+import { validateExerciseSubmission } from '@/lib/lesson-validation';
 
 
 type LessonExercise = {
@@ -39,9 +40,21 @@ const getValidTemplate = (editorType?: string | null): ValidTemplate => {
     return 'react';
 }
 
-const CodeEditorChildren = ({ onCompleteExercise, isCompleted }: { onCompleteExercise: () => void; isCompleted: boolean }) => {
+type CodeEditorChildrenProps = {
+    onCompleteExercise: (submission: string) => void;
+    isCompleted: boolean;
+};
+
+const CodeEditorChildren = ({ onCompleteExercise, isCompleted }: CodeEditorChildrenProps) => {
 
     const { sandpack } = useSandpack();
+
+    const handleSubmit = () => {
+        const submission = Object.values(sandpack.files)
+            .map((f) => (typeof f === 'string' ? f : f?.code ?? ''))
+            .join('\n');
+        onCompleteExercise(submission);
+    };
 
     return (
         <div className='font-game absolute bottom-40 flex gap-5 right-5 z-50'>
@@ -52,7 +65,7 @@ const CodeEditorChildren = ({ onCompleteExercise, isCompleted }: { onCompleteExe
             <Button variant={'pixel'}
                 disabled={isCompleted}
                 className="bg-[#a3e534] text-xl z-5" size={'lg'}
-                onClick={() => onCompleteExercise()}
+                onClick={handleSubmit}
             >
                 {isCompleted ? 'Already Completed !' : 'Mark Completed!'}</Button>
         </div>
@@ -63,18 +76,35 @@ function CodeEditor({ lesson, editorType, isCompleted, refreshData }: Props) {
 
     const router = useRouter();
 
-    const onCompleteExercise = async () => {
+    const onCompleteExercise = async (submission: string) => {
+        // Client-side pre-flight so the user gets immediate feedback instead
+        // of a round-trip on a guaranteed-failing submission. Server
+        // re-validates regardless.
+        const local = validateExerciseSubmission(lesson.content, submission);
+        if (!local.pass) {
+            toast.error(local.reason);
+            return;
+        }
+
         try {
-            await axios.post('/api/lesson/complete', { lessonId: lesson.id });
+            await axios.post('/api/lesson/complete', {
+                lessonId: lesson.id,
+                submission,
+            });
             toast.success('Lesson marked as completed!');
 
             if (refreshData) {
                 await refreshData();
             }
             router.refresh();
-        } catch (error) {
-            console.error('Error marking lesson complete:', error);
-            toast.error('Failed to mark lesson as completed');
+        } catch (error: any) {
+            const reason = error?.response?.data?.reason;
+            if (reason) {
+                toast.error(reason);
+            } else {
+                console.error('Error marking lesson complete:', error);
+                toast.error('Failed to mark lesson as completed');
+            }
         }
     }
 
