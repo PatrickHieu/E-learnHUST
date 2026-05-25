@@ -8,6 +8,10 @@ const isPublicRoute = createRouteMatcher([
 ])
 
 const isAdminRoute = createRouteMatcher(['/admin(.*)'])
+// Sub-area of /admin reserved for the admin role only — user management,
+// role assignment. Librarians are blocked here even though they have
+// general /admin access.
+const isAdminOnlyRoute = createRouteMatcher(['/admin/users(.*)'])
 
 export default clerkMiddleware(async (auth, req) => {
   if (isPublicRoute(req)) {
@@ -17,7 +21,12 @@ export default clerkMiddleware(async (auth, req) => {
     const { sessionClaims } = await auth();
     const role = sessionClaims?.metadata?.role;
 
-    if (role !== 'admin') {
+    if (isAdminOnlyRoute(req)) {
+      if (role !== 'admin') {
+        const url = new URL('/', req.url);
+        return NextResponse.redirect(url);
+      }
+    } else if (role !== 'admin' && role !== 'librarian') {
       const url = new URL('/', req.url);
       return NextResponse.redirect(url);
     }

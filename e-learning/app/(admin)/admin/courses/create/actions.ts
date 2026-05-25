@@ -5,8 +5,13 @@ import { CoursesTable } from "@/config/schema";
 import { max } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { hasAdminAccess } from "@/lib/checkRole";
 
 export async function createCourseAction(formData: FormData) {
+  if (!(await hasAdminAccess())) {
+    throw new Error("Forbidden: admin or librarian role required");
+  }
+
   const title = formData.get("title") as string;
   const desc = formData.get("desc") as string;
   const bannerImage = formData.get("bannerImage") as string;

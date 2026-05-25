@@ -4,9 +4,14 @@ import { db } from "@/config/db";
 import { CoursesTable } from "@/config/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { hasAdminAccess } from "@/lib/checkRole";
 
 export async function updateCourseAction(courseId: number, formData: FormData) {
   try {
+    if (!(await hasAdminAccess())) {
+      return { success: false, error: "Forbidden" };
+    }
+
     const title = formData.get("title") as string;
     const desc = formData.get("desc") as string;
     const bannerImage = formData.get("bannerImage") as string;
