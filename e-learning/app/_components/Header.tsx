@@ -89,7 +89,14 @@ function Header() {
               </NavigationMenuLink>
             </NavigationMenuItem>
 
-            {/* 3. Link Đơn Lẻ: Pricing */}
+            {/* 3. Link Đơn Lẻ: Leaderboard */}
+            <NavigationMenuItem>
+              <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent text-white hover:bg-zinc-800`}>
+                <Link href="/leaderboard">Leaderboard</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
+
+            {/* 4. Link Đơn Lẻ: Pricing */}
             <NavigationMenuItem>
               <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent text-white hover:bg-zinc-800`}>
                 <Link href="/pricing">Pricing</Link>
