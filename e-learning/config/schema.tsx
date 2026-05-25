@@ -1,4 +1,3 @@
-import { id } from "date-fns/locale";
 import { integer, json, pgTable, varchar, timestamp } from "drizzle-orm/pg-core";
 
 
@@ -28,7 +27,6 @@ export const CourseChapterTable = pgTable("courseChapters", {
     courseId: integer().notNull(),
     name: varchar(),
     desc: varchar(),
-    exercises: json(),
 });
 
 export const EnrolledCourseTable = pgTable('enrolledCourse', {
@@ -37,25 +35,6 @@ export const EnrolledCourseTable = pgTable('enrolledCourse', {
     courseId: integer(),
     enrollDate: timestamp().defaultNow(),
     xpEarned: integer()
-})
-
-export const CompletedExerciseTable = pgTable('completedExercise', {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    courseId: integer(),
-    chapterId: integer(),
-    exerciseId: integer(),
-    userId: varchar(),
-
-
-})
-
-export const ExercisesTable = pgTable('exercises', {
-    id: integer().primaryKey().generatedAlwaysAsIdentity(),
-    courseId: integer(),
-    chapterId: integer(),
-    exerciseId: varchar(),
-    exerciseContent: json(),
-    exerciseName: varchar()
 })
 
 // Multi-modal lessons (Phase 2). A chapter is an ordered sequence of lessons

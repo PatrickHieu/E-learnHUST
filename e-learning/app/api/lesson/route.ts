@@ -10,9 +10,7 @@ import {
 } from "@/config/schema";
 
 // Returns a single lesson plus sibling-lesson navigation metadata for the
-// student playground. Reads from the new lessons table; the legacy
-// /api/exercise route stays in place for backwards compatibility until the
-// UI is fully migrated.
+// student playground.
 export async function POST(req: NextRequest) {
   const user = await currentUser();
   const userId = user?.id;
