@@ -7,7 +7,7 @@ import {
   EnrolledCourseTable,
   LessonsTable,
 } from "@/config/schema";
-import { eq, asc, inArray, and } from "drizzle-orm";
+import { eq, asc, desc, inArray, and, count, getTableColumns } from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
@@ -159,7 +159,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(result);
   }
 
-  // Default: list all courses
+  // Default: list all courses. ?sort=trending orders by enrollment count
+  // so the dashboard can prioritise high-demand courses.
+  const sort = searchParams.get("sort");
+  if (sort === "trending") {
+    const enrollmentCount = count(EnrolledCourseTable.id);
+    const trending = await db
+      .select({
+        ...getTableColumns(CoursesTable),
+        enrollmentCount,
+      })
+      .from(CoursesTable)
+      .leftJoin(
+        EnrolledCourseTable,
+        eq(EnrolledCourseTable.courseId, CoursesTable.courseId),
+      )
+      .groupBy(CoursesTable.id)
+      .orderBy(desc(enrollmentCount), asc(CoursesTable.id));
+    return NextResponse.json(trending);
+  }
+
   const result = await db.select().from(CoursesTable);
   return NextResponse.json(result);
 }
