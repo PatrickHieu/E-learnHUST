@@ -16,8 +16,8 @@ export type EnrolledCourseInfo = {
     editorType: string,
     xpEarned: number,
     totalXp: number,
-    completedExercises: number,
-    totalExercises: number,
+    completedLessons: number,
+    totalLessons: number,
 }
 
 function EnrolledCourses() {

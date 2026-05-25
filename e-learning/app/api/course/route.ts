@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/config/db";
 import {
-  CompletedExerciseTable,
+  CompletedLessonTable,
   CourseChapterTable,
   CoursesTable,
   EnrolledCourseTable,
+  LessonsTable,
 } from "@/config/schema";
-import { eq, asc, desc, inArray, and } from "drizzle-orm";
+import { eq, asc, inArray, and } from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const courseId = searchParams.get("courseId") || searchParams.get("courseid");
+  const rawCourseId = searchParams.get("courseId") || searchParams.get("courseid");
   const user = await currentUser();
   const userId = user?.id;
 
@@ -22,50 +23,81 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  if (courseId && courseId !== "enrolled") {
-    const result = await db
+  // Single-course detail
+  if (rawCourseId && rawCourseId !== "enrolled") {
+    const courseIdNum = Number(rawCourseId);
+    if (!Number.isFinite(courseIdNum)) {
+      return NextResponse.json({ error: "Invalid courseId" }, { status: 400 });
+    }
+
+    const [course] = await db
       .select()
       .from(CoursesTable)
-      .where(eq(CoursesTable.courseId, Number(courseId)));
+      .where(eq(CoursesTable.courseId, courseIdNum))
+      .limit(1);
 
-    const chapterResult = await db
+    if (!course) {
+      return NextResponse.json({ error: "Course not found" }, { status: 404 });
+    }
+
+    const chapterRows = await db
       .select()
       .from(CourseChapterTable)
-      .where(eq(CourseChapterTable.courseId, Number(courseId)));
+      .where(eq(CourseChapterTable.courseId, courseIdNum))
+      .orderBy(asc(CourseChapterTable.chapterId));
+
+    const lessonRows = await db
+      .select({
+        id: LessonsTable.id,
+        courseId: LessonsTable.courseId,
+        chapterId: LessonsTable.chapterId,
+        slug: LessonsTable.slug,
+        orderIndex: LessonsTable.orderIndex,
+        type: LessonsTable.type,
+        title: LessonsTable.title,
+        xp: LessonsTable.xp,
+      })
+      .from(LessonsTable)
+      .where(eq(LessonsTable.courseId, courseIdNum))
+      .orderBy(asc(LessonsTable.chapterId), asc(LessonsTable.orderIndex));
 
     const enrolledCourse = await db
       .select()
       .from(EnrolledCourseTable)
-      //@ts-ignore
-      .where(and(eq(EnrolledCourseTable?.courseId, courseId),
+      .where(
+        and(
+          eq(EnrolledCourseTable.courseId, courseIdNum),
           eq(EnrolledCourseTable.userId, userId),
         ),
-      );
-
-    const isEnrolledCourse = enrolledCourse?.length > 0 ? true : false;
-
-    const completeExercises = await db
-      .select()
-      .from(CompletedExerciseTable)
-      //@ts-ignore
-      .where( and(eq(CompletedExerciseTable.courseId, courseId),
-          eq(CompletedExerciseTable.userId, userId),
-        ),
       )
-      .orderBy(
-        desc(CompletedExerciseTable?.courseId),
-        desc(CompletedExerciseTable?.exerciseId),
+      .limit(1);
+
+    const completed = await db
+      .select({ lessonId: CompletedLessonTable.lessonId })
+      .from(CompletedLessonTable)
+      .where(
+        and(
+          eq(CompletedLessonTable.courseId, courseIdNum),
+          eq(CompletedLessonTable.userId, userId),
+        ),
       );
+
+    const chapters = chapterRows.map((ch) => ({
+      ...ch,
+      lessons: lessonRows.filter((l) => l.chapterId === ch.chapterId),
+    }));
 
     return NextResponse.json({
-      ...result[0],
-      chapters: chapterResult,
-      userEnrolled: isEnrolledCourse,
+      ...course,
+      chapters,
+      userEnrolled: enrolledCourse.length > 0,
       courseEnrolledInfo: enrolledCourse[0],
-      completedExercises: completeExercises,
+      completedLessonIds: completed.map((c) => c.lessonId),
     });
-  } else if (courseId === "enrolled") {
-    // 1️⃣ Fetch all enrolled courses for the user
+  }
+
+  // Dashboard: enrolled-course summary cards
+  if (rawCourseId === "enrolled") {
     const enrolledCourses = await db
       .select()
       .from(EnrolledCourseTable)
@@ -75,84 +107,59 @@ export async function GET(req: NextRequest) {
       return NextResponse.json([]);
     }
 
-    // Extract courseIds
-    const courseIds = enrolledCourses.map((c) => c.courseId);
+    const courseIds = enrolledCourses
+      .map((c) => c.courseId)
+      .filter((id): id is number => typeof id === "number");
 
-    // 2️⃣ Fetch all course details in one go
     const courses = await db
       .select()
       .from(CoursesTable)
-      //@ts-ignore
       .where(inArray(CoursesTable.courseId, courseIds));
 
-    // 3️⃣ Fetch chapters for all courses
-    const chapters = await db
-      .select()
-      .from(CourseChapterTable)
-      //@ts-ignore
-      .where(inArray(CourseChapterTable.courseId, courseIds))
-      .orderBy(asc(CourseChapterTable.chapterId));
+    const lessonsByCourse = await db
+      .select({ courseId: LessonsTable.courseId })
+      .from(LessonsTable)
+      .where(inArray(LessonsTable.courseId, courseIds));
 
-    // 4️⃣ Fetch completed exercises for all courses
-    const completed = await db
-      .select()
-      .from(CompletedExerciseTable)
-      //@ts-ignore
-      .where(and(inArray(CompletedExerciseTable.courseId, courseIds),
-          eq(CompletedExerciseTable.userId, userId),
+    const completedByCourse = await db
+      .select({ courseId: CompletedLessonTable.courseId })
+      .from(CompletedLessonTable)
+      .where(
+        and(
+          inArray(CompletedLessonTable.courseId, courseIds),
+          eq(CompletedLessonTable.userId, userId),
         ),
-      )
-      .orderBy(
-        desc(CompletedExerciseTable.courseId),
-        desc(CompletedExerciseTable.exerciseId),
       );
 
-    const finalResult = courses.map((course) => {
-      const courseEnrollInfo = enrolledCourses.find(
-        (e) => e.courseId === course.courseId,
+    const totalsByCourse = new Map<number, number>();
+    for (const l of lessonsByCourse) {
+      totalsByCourse.set(l.courseId, (totalsByCourse.get(l.courseId) ?? 0) + 1);
+    }
+    const completedCountByCourse = new Map<number, number>();
+    for (const c of completedByCourse) {
+      completedCountByCourse.set(
+        c.courseId,
+        (completedCountByCourse.get(c.courseId) ?? 0) + 1,
       );
+    }
 
+    const result = courses.map((course) => {
+      const enrollment = enrolledCourses.find((e) => e.courseId === course.courseId);
       return {
-        ...course,
-        chapters: chapters.filter((ch) => ch.courseId === course.courseId),
-        completedExercises: completed.filter(
-          (cx) => cx.courseId === course.courseId,
-        ),
-        courseEnrolledInfo: courseEnrollInfo,
-        userEnrolled: true,
+        courseId: course.courseId,
+        title: course.title,
+        bannerImage: course.bannerImage,
+        totalLessons: totalsByCourse.get(course.courseId) ?? 0,
+        completedLessons: completedCountByCourse.get(course.courseId) ?? 0,
+        xpEarned: enrollment?.xpEarned ?? 0,
+        level: course.level,
       };
     });
 
-    // ⭐ Format output
-    const formattedResult = finalResult.map((item) => {
-      // Count total exercises by summing exercises arrays in all chapters
-      const totalExercises = item.chapters.reduce((acc, chapter) => {
-        // If exercises is stored as JSON/array
-        const exercisesCount = Array.isArray(chapter.exercises)
-          ? chapter.exercises.length
-          : 0;
-        return acc + exercisesCount;
-      }, 0);
-
-      const completedExercises = item.completedExercises.length;
-
-      return {
-        courseId: item.courseId,
-        title: item.title,
-        bannerImage: item?.bannerImage,
-        totalExercises,
-        completedExercises,
-        xpEarned: item.courseEnrolledInfo?.xpEarned || 0,
-        level: item.level,
-      };
-    });
-
-    return NextResponse.json(formattedResult);
-  } else {
-    //fetch all courses from the database
-    const result = await db.select().from(CoursesTable);
-
-    console.log("Kết quả từ DB:", result);
     return NextResponse.json(result);
   }
+
+  // Default: list all courses
+  const result = await db.select().from(CoursesTable);
+  return NextResponse.json(result);
 }
