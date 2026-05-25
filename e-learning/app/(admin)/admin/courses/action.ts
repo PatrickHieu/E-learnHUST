@@ -4,9 +4,14 @@ import { db } from "@/config/db";
 import { CoursesTable } from "@/config/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { hasAdminAccess } from "@/lib/checkRole";
 
 export async function deleteCourseAction(courseId: number) {
   try {
+    if (!(await hasAdminAccess())) {
+      throw new Error("Forbidden: admin or librarian role required");
+    }
+
     await db.delete(CoursesTable).where(eq(CoursesTable.courseId, courseId));
 
     revalidatePath("/admin/courses");

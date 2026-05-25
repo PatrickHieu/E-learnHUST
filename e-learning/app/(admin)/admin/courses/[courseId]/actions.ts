@@ -9,7 +9,7 @@ import {
 import { and, eq, max } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { checkRole } from "@/lib/checkRole";
+import { hasAdminAccess } from "@/lib/checkRole";
 
 function slugify(s: string): string {
   return s
@@ -21,8 +21,8 @@ function slugify(s: string): string {
 }
 
 async function requireAdmin() {
-  if (!(await checkRole("admin"))) {
-    throw new Error("Forbidden: admin role required");
+  if (!(await hasAdminAccess())) {
+    throw new Error("Forbidden: admin or librarian role required");
   }
 }
 
