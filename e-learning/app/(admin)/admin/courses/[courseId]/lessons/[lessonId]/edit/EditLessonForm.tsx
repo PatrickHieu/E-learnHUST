@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { updateLessonAction } from "../../../actions";
 
 type Props = {
@@ -23,11 +24,34 @@ const SELECT_STYLE =
 
 export default function EditLessonForm({ courseId, lesson }: Props) {
   const [error, setError] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
-  async function submit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
-    const result = await updateLessonAction(courseId, lesson.id, formData);
-    if (result && !result.success) setError(result.error);
+    setSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+
+    try {
+      if (lesson.type === "pdf") {
+        const file = pdfInputRef.current?.files?.[0];
+        if (file && file.size > 0) {
+          const url = await uploadToCloudinary(file);
+          formData.set("pdfUrl", url);
+        }
+      }
+
+      const result = await updateLessonAction(courseId, lesson.id, formData);
+      if (result && !result.success) setError(result.error);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   // Pull existing values per type so the form opens already filled in.
@@ -39,7 +63,7 @@ export default function EditLessonForm({ courseId, lesson }: Props) {
   const firstStarterCode = starterEntries[0]?.[1] ?? "";
 
   return (
-    <form action={submit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Type</label>
@@ -82,9 +106,28 @@ export default function EditLessonForm({ courseId, lesson }: Props) {
       )}
 
       {lesson.type === "pdf" && (
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">PDF URL *</label>
-          <Input name="pdfUrl" required defaultValue={v.pdfUrl ?? ""} />
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Replace PDF (optional)</label>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setPdfFileName(e.target.files?.[0]?.name ?? null)}
+              className="block w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-zinc-300 dark:file:border-zinc-700 file:bg-transparent file:text-sm hover:file:bg-zinc-100 dark:hover:file:bg-zinc-900"
+            />
+            {pdfFileName && (
+              <p className="text-xs text-zinc-500">Selected: {pdfFileName} — uploads on save.</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">PDF URL *</label>
+            <Input name="pdfUrl" required defaultValue={v.pdfUrl ?? ""} />
+            <p className="text-xs text-zinc-500">
+              Pick a file above to replace the current PDF, or edit the URL directly.
+            </p>
+          </div>
         </div>
       )}
 
@@ -191,7 +234,9 @@ export default function EditLessonForm({ courseId, lesson }: Props) {
         <Link href={`/admin/courses/${courseId}`}>
           <Button type="button" variant="outline">Cancel</Button>
         </Link>
-        <Button type="submit">Save</Button>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Uploading & Saving…" : "Save"}
+        </Button>
       </div>
     </form>
   );

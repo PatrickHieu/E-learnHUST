@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { uploadToCloudinary } from "@/lib/cloudinary";
 import { createLessonAction } from "../../actions";
 
 type ChapterOption = { id: number; chapterId: number | null; name: string | null };
@@ -22,15 +23,41 @@ const SELECT_STYLE =
 export default function LessonForm({ courseId, chapters }: Props) {
   const [type, setType] = useState<LessonType>("video");
   const [error, setError] = useState<string | null>(null);
+  const [pdfFileName, setPdfFileName] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const pdfInputRef = useRef<HTMLInputElement>(null);
 
-  async function submit(formData: FormData) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     setError(null);
-    const result = await createLessonAction(courseId, formData);
-    if (result && !result.success) setError(result.error);
+    setSubmitting(true);
+
+    const formData = new FormData(e.currentTarget);
+
+    try {
+      // If the admin picked a PDF file, upload it to Cloudinary first and
+      // overwrite the pdfUrl field with the resulting URL before calling
+      // the server action.
+      if (type === "pdf") {
+        const file = pdfInputRef.current?.files?.[0];
+        if (file && file.size > 0) {
+          const url = await uploadToCloudinary(file);
+          formData.set("pdfUrl", url);
+        }
+      }
+
+      const result = await createLessonAction(courseId, formData);
+      if (result && !result.success) setError(result.error);
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
-    <form action={submit} className="flex flex-col gap-5">
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">Chapter *</label>
@@ -88,16 +115,34 @@ export default function LessonForm({ courseId, chapters }: Props) {
       )}
 
       {type === "pdf" && (
-        <div className="flex flex-col gap-2">
-          <label className="text-sm font-medium">PDF URL *</label>
-          <Input
-            name="pdfUrl"
-            required
-            placeholder="https://res.cloudinary.com/.../document.pdf"
-          />
-          <p className="text-xs text-zinc-500">
-            Upload to Cloudinary first (or any public PDF host) and paste the URL here.
-          </p>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Upload PDF file</label>
+            <input
+              ref={pdfInputRef}
+              type="file"
+              accept="application/pdf"
+              onChange={(e) => setPdfFileName(e.target.files?.[0]?.name ?? null)}
+              className="block w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-zinc-300 dark:file:border-zinc-700 file:bg-transparent file:text-sm hover:file:bg-zinc-100 dark:hover:file:bg-zinc-900"
+            />
+            {pdfFileName && (
+              <p className="text-xs text-zinc-500">Selected: {pdfFileName}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">
+              {pdfFileName ? "PDF URL (will be filled after upload)" : "…or paste PDF URL *"}
+            </label>
+            <Input
+              name="pdfUrl"
+              required={!pdfFileName}
+              placeholder="https://res.cloudinary.com/.../document.pdf"
+            />
+            <p className="text-xs text-zinc-500">
+              Pick a file above to upload to Cloudinary on save, or paste a public URL directly.
+            </p>
+          </div>
         </div>
       )}
 
@@ -205,7 +250,9 @@ export default function LessonForm({ courseId, chapters }: Props) {
         <Link href={`/admin/courses/${courseId}`}>
           <Button type="button" variant="outline">Cancel</Button>
         </Link>
-        <Button type="submit">Create Lesson</Button>
+        <Button type="submit" disabled={submitting}>
+          {submitting ? "Uploading & Saving…" : "Create Lesson"}
+        </Button>
       </div>
     </form>
   );
