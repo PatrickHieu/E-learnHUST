@@ -1,4 +1,4 @@
-"use client"; // Đánh dấu đây là Client Component để dùng được onClick
+"use client";
 
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
@@ -9,16 +9,17 @@ export default function DeleteCourseButton({ courseId }: { courseId: number }) {
         <form action={deleteCourseAction.bind(null, courseId)}>
             <Button
                 type="submit"
-                variant="outline"
+                variant="ghost"
                 size="icon"
-                className="bg-transparent border-zinc-700 hover:bg-red-900/50"
+                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                title="Delete course"
                 onClick={(e) => {
-                    if (!confirm("Bạn có chắc chắn muốn xóa khóa học này không? Hành động này không thể hoàn tác!")) {
+                    if (!confirm("Delete this course permanently? This cannot be undone.")) {
                         e.preventDefault();
                     }
                 }}
             >
-                <Trash2 className="w-4 h-4 text-red-400" />
+                <Trash2 className="w-4 h-4" />
             </Button>
         </form>
     );

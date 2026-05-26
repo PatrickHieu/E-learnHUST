@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { checkRole, hasAdminAccess } from "@/lib/checkRole";
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
+import { LayoutDashboard, BookOpen, Users, ArrowLeft } from "lucide-react";
 
 export default async function AdminLayout({
     children,
@@ -15,36 +16,59 @@ export default async function AdminLayout({
     const isAdmin = await checkRole("admin");
 
     return (
-        <div className="flex h-screen bg-zinc-950 text-white font-game">
-            {/* Sidebar Admin */}
-            <aside className="w-64 border-r border-zinc-800 p-6 flex flex-col gap-6">
-                <div className="text-2xl font-bold text-yellow-400">
-                    {isAdmin ? "ADMIN HUB" : "LIBRARIAN HUB"}
+        <div className="flex h-screen bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 font-sans">
+            <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 p-6 flex flex-col gap-6 bg-white dark:bg-zinc-950">
+                <div>
+                    <div className="text-xs uppercase tracking-widest text-zinc-500">
+                        {isAdmin ? "Admin" : "Librarian"}
+                    </div>
+                    <div className="text-xl font-semibold mt-1">Code Block</div>
                 </div>
-                <nav className="flex flex-col gap-2 flex-1">
-                    <Link href="/admin" className="p-3 hover:bg-zinc-900 rounded text-lg">Overview</Link>
-                    <Link href="/admin/courses" className="p-3 hover:bg-zinc-900 rounded text-lg">Courses</Link>
+
+                <nav className="flex flex-col gap-1 flex-1">
+                    <Link
+                        href="/admin"
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                    >
+                        <LayoutDashboard className="w-4 h-4" />
+                        Overview
+                    </Link>
+                    <Link
+                        href="/admin/courses"
+                        className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                    >
+                        <BookOpen className="w-4 h-4" />
+                        Courses
+                    </Link>
                     {isAdmin && (
-                        <Link href="/admin/users" className="p-3 hover:bg-zinc-900 rounded text-lg">Users</Link>
+                        <Link
+                            href="/admin/users"
+                            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                        >
+                            <Users className="w-4 h-4" />
+                            Users
+                        </Link>
                     )}
                 </nav>
 
-                {/* Nút User & Thoát về Dashboard */}
-                <div className="border-t border-zinc-800 pt-4 flex flex-col gap-4">
-                    <Link href="/dashboard" className="p-3 hover:bg-zinc-900 rounded text-lg text-zinc-500">
-                        ← Back to User Mode
+                <div className="border-t border-zinc-200 dark:border-zinc-800 pt-4 flex flex-col gap-3">
+                    <Link
+                        href="/dashboard"
+                        className="flex items-center gap-2 px-3 py-2 rounded-md text-xs text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                    >
+                        <ArrowLeft className="w-3 h-3" />
+                        Back to User Mode
                     </Link>
                     <div className="flex items-center gap-3 px-3">
                         <UserButton afterSignOutUrl="/" />
-                        <span className="text-sm text-zinc-400">
-                            {isAdmin ? "Admin Account" : "Librarian Account"}
+                        <span className="text-xs text-zinc-500">
+                            {isAdmin ? "Admin" : "Librarian"}
                         </span>
                     </div>
                 </div>
             </aside>
 
-            {/* Main Content Area */}
-            <main className="flex-1 overflow-y-auto p-8 bg-zinc-900/50">
+            <main className="flex-1 overflow-y-auto p-8">
                 {children}
             </main>
         </div>

@@ -11,7 +11,7 @@ type Props = {
 export default function RoleToggleButton({ clerkUserId, currentRole }: Props) {
   if (currentRole === "admin") {
     return (
-      <span className="text-xs text-zinc-500 font-game">
+      <span className="text-xs text-zinc-500">
         Admin (not changeable here)
       </span>
     );
@@ -28,8 +28,8 @@ export default function RoleToggleButton({ clerkUserId, currentRole }: Props) {
         size="sm"
         className={
           isLibrarian
-            ? "bg-transparent border-zinc-700 text-red-300 hover:bg-red-900/30 font-game"
-            : "font-game"
+            ? "text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
+            : ""
         }
         onClick={(e) => {
           if (!confirm(
