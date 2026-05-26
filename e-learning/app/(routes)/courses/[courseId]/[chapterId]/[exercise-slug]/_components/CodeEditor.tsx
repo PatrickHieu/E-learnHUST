@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import {
     SandpackProvider,
     SandpackLayout,
@@ -15,6 +15,7 @@ import axios from 'axios';
 import { toast } from 'sonner';
 import type { ExerciseLessonContent } from '@/config/schema';
 import { validateExerciseSubmission } from '@/lib/lesson-validation';
+import { UserDetailContext } from '@/context/UserDetailContext';
 
 
 type LessonExercise = {
@@ -75,6 +76,7 @@ const CodeEditorChildren = ({ onCompleteExercise, isCompleted }: CodeEditorChild
 function CodeEditor({ lesson, editorType, isCompleted, refreshData }: Props) {
 
     const router = useRouter();
+    const { refreshUserDetail } = useContext(UserDetailContext);
 
     const onCompleteExercise = async (submission: string) => {
         // Client-side pre-flight so the user gets immediate feedback instead
@@ -96,6 +98,7 @@ function CodeEditor({ lesson, editorType, isCompleted, refreshData }: Props) {
             if (refreshData) {
                 await refreshData();
             }
+            await refreshUserDetail();
             router.refresh();
         } catch (error: any) {
             const reason = error?.response?.data?.reason;

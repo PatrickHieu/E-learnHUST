@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import { Course } from '../../_components/CourseList'
 import Image from 'next/image'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -7,6 +7,7 @@ import axios from 'axios'
 import { useState } from 'react'
 import { Loader2Icon } from 'lucide-react'
 import { toast } from 'sonner'
+import { UserDetailContext } from '@/context/UserDetailContext'
 
 
 type Props = {
@@ -19,6 +20,7 @@ function CourseDetailBanner({ loading, courseDetail, refreshData }: Props) {
 
   const [submitting, setSubmitting] = useState(false)
   const unlockCost = courseDetail?.unlockCost ?? 0;
+  const { refreshUserDetail } = useContext(UserDetailContext);
 
   const EnrollCourse = async () => {
     setSubmitting(true);
@@ -30,6 +32,9 @@ function CourseDetailBanner({ loading, courseDetail, refreshData }: Props) {
           : 'Course enrolled successfully!',
       );
       refreshData();
+      // Refresh the global user detail so the dashboard star balance picks up
+      // the deduction without a full page reload.
+      await refreshUserDetail();
     } catch (error: any) {
       const reason = error?.response?.data?.reason;
       toast.error(reason ?? 'Failed to enroll in this course');

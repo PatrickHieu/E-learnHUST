@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useContext } from "react";
 import dynamic from "next/dynamic";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import type {
   PdfLessonContent,
   VideoLessonContent,
 } from "@/config/schema";
+import { UserDetailContext } from "@/context/UserDetailContext";
 
 const SplitterLayout = dynamic(() => import("react-splitter-layout"), {
   ssr: false,
@@ -41,6 +42,7 @@ type Props = {
 
 function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData }: Props) {
   const router = useRouter();
+  const { refreshUserDetail } = useContext(UserDetailContext);
 
   const markCompleted = async () => {
     if (!lesson) return;
@@ -48,6 +50,7 @@ function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData 
       await axios.post("/api/lesson/complete", { lessonId: lesson.id });
       toast.success("Lesson marked as completed!");
       refreshData();
+      await refreshUserDetail();
       router.refresh();
     } catch (err) {
       console.error(err);
