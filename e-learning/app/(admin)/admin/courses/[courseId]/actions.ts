@@ -103,7 +103,7 @@ export async function createLessonAction(courseId: number, formData: FormData) {
   if (!title) {
     return { success: false, error: "Lesson title is required" };
   }
-  if (type !== "video" && type !== "pdf") {
+  if (type !== "video" && type !== "pdf" && type !== "exercise") {
     return { success: false, error: "Unsupported lesson type" };
   }
 
@@ -113,10 +113,39 @@ export async function createLessonAction(courseId: number, formData: FormData) {
     const url = (formData.get("url") as string)?.trim();
     if (!url) return { success: false, error: "Video URL is required" };
     content = { provider, url };
-  } else {
+  } else if (type === "pdf") {
     const pdfUrl = (formData.get("pdfUrl") as string)?.trim();
     if (!pdfUrl) return { success: false, error: "PDF URL is required" };
     content = { pdfUrl };
+  } else {
+    // Exercise. Build the ExerciseLessonContent payload from the form. Most
+    // fields are required so the student playground has something to render;
+    // regex / expectedOutput are optional (a lesson without them auto-passes
+    // the validation gate from feat28).
+    const exContent = (formData.get("content") as string)?.trim();
+    const task = (formData.get("task") as string)?.trim();
+    const hint = (formData.get("hint") as string)?.trim() ?? "";
+    const hintXp = Number(formData.get("hintXp") || 0);
+    const difficulty = (formData.get("difficulty") as string) || "easy";
+    const starterFilename = (formData.get("starterFilename") as string)?.trim();
+    const starterCodeText = (formData.get("starterCode") as string) ?? "";
+    const regex = (formData.get("regex") as string)?.trim() || undefined;
+    const expectedOutput = (formData.get("expectedOutput") as string) || undefined;
+
+    if (!exContent) return { success: false, error: "Content (description) is required" };
+    if (!task) return { success: false, error: "Task instructions are required" };
+    if (!starterFilename) return { success: false, error: "Starter filename is required (e.g. /index.html)" };
+
+    content = {
+      content: exContent,
+      task,
+      hint,
+      hintXp,
+      starterCode: { [starterFilename]: starterCodeText },
+      regex,
+      expectedOutput: expectedOutput && expectedOutput.trim() ? expectedOutput : undefined,
+      difficulty,
+    };
   }
 
   // Auto orderIndex and slug so admins don't have to think about them.
