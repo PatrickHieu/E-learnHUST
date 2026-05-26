@@ -16,6 +16,7 @@ import {
   FileText,
   Code2,
   ArrowLeft,
+  Pencil,
 } from "lucide-react";
 import { deleteChapterAction, deleteLessonAction } from "./actions";
 
@@ -107,18 +108,25 @@ export default async function CourseDetailAdminPage({ params }: Props) {
                       <p className="text-xs text-zinc-500 mt-1">{chapter.desc}</p>
                     )}
                   </div>
-                  <form action={deleteChapterAction.bind(null, courseId, chapter.id)}>
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
-                      disabled={chapterLessons.length > 0}
-                      title={chapterLessons.length > 0 ? "Delete lessons first" : "Delete chapter"}
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
-                  </form>
+                  <div className="flex items-center gap-1">
+                    <Link href={`/admin/courses/${courseId}/chapters/${chapter.id}/edit`}>
+                      <Button variant="ghost" size="icon" title="Edit chapter">
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                    <form action={deleteChapterAction.bind(null, courseId, chapter.id)}>
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40"
+                        disabled={chapterLessons.length > 0}
+                        title={chapterLessons.length > 0 ? "Delete lessons first" : "Delete chapter"}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </form>
+                  </div>
                 </header>
 
                 <div className="p-3">
@@ -141,17 +149,24 @@ export default async function CourseDetailAdminPage({ params }: Props) {
                               {l.xp} XP
                             </span>
                           </div>
-                          <form action={deleteLessonAction.bind(null, courseId, l.id)}>
-                            <Button
-                              type="submit"
-                              variant="ghost"
-                              size="icon"
-                              className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 h-7 w-7"
-                              title="Delete lesson"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </form>
+                          <div className="flex items-center gap-1">
+                            <Link href={`/admin/courses/${courseId}/lessons/${l.id}/edit`}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" title="Edit lesson">
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                            </Link>
+                            <form action={deleteLessonAction.bind(null, courseId, l.id)}>
+                              <Button
+                                type="submit"
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 h-7 w-7"
+                                title="Delete lesson"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </form>
+                          </div>
                         </li>
                       ))}
                     </ul>

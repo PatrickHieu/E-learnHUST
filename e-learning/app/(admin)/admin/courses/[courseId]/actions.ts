@@ -182,3 +182,95 @@ export async function deleteLessonAction(courseId: number, lessonId: number) {
 
   revalidatePath(`/admin/courses/${courseId}`);
 }
+
+export async function updateChapterAction(
+  courseId: number,
+  chapterRowId: number,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  const name = (formData.get("name") as string)?.trim();
+  const desc = (formData.get("desc") as string)?.trim();
+  if (!name) {
+    return { success: false, error: "Chapter name is required" };
+  }
+
+  await db
+    .update(CourseChapterTable)
+    .set({ name, desc })
+    .where(eq(CourseChapterTable.id, chapterRowId));
+
+  revalidatePath(`/admin/courses/${courseId}`);
+  redirect(`/admin/courses/${courseId}`);
+}
+
+export async function updateLessonAction(
+  courseId: number,
+  lessonId: number,
+  formData: FormData,
+) {
+  await requireAdmin();
+
+  const [lesson] = await db
+    .select()
+    .from(LessonsTable)
+    .where(eq(LessonsTable.id, lessonId))
+    .limit(1);
+  if (!lesson) {
+    return { success: false, error: "Lesson not found" };
+  }
+
+  const title = (formData.get("title") as string)?.trim();
+  const xp = Number(formData.get("xp") || 0);
+  if (!title) {
+    return { success: false, error: "Lesson title is required" };
+  }
+
+  // Type is intentionally not editable — switching type would invalidate
+  // the existing content shape. Admin must delete + recreate to change type.
+  let content: Record<string, unknown>;
+  if (lesson.type === "video") {
+    const provider = (formData.get("provider") as string) || "youtube";
+    const url = (formData.get("url") as string)?.trim();
+    if (!url) return { success: false, error: "Video URL is required" };
+    content = { provider, url };
+  } else if (lesson.type === "pdf") {
+    const pdfUrl = (formData.get("pdfUrl") as string)?.trim();
+    if (!pdfUrl) return { success: false, error: "PDF URL is required" };
+    content = { pdfUrl };
+  } else {
+    const exContent = (formData.get("content") as string)?.trim();
+    const task = (formData.get("task") as string)?.trim();
+    const hint = (formData.get("hint") as string)?.trim() ?? "";
+    const hintXp = Number(formData.get("hintXp") || 0);
+    const difficulty = (formData.get("difficulty") as string) || "easy";
+    const starterFilename = (formData.get("starterFilename") as string)?.trim();
+    const starterCodeText = (formData.get("starterCode") as string) ?? "";
+    const regex = (formData.get("regex") as string)?.trim() || undefined;
+    const expectedOutput = (formData.get("expectedOutput") as string) || undefined;
+
+    if (!exContent) return { success: false, error: "Content (description) is required" };
+    if (!task) return { success: false, error: "Task instructions are required" };
+    if (!starterFilename) return { success: false, error: "Starter filename is required" };
+
+    content = {
+      content: exContent,
+      task,
+      hint,
+      hintXp,
+      starterCode: { [starterFilename]: starterCodeText },
+      regex,
+      expectedOutput: expectedOutput && expectedOutput.trim() ? expectedOutput : undefined,
+      difficulty,
+    };
+  }
+
+  await db
+    .update(LessonsTable)
+    .set({ title, xp, content })
+    .where(eq(LessonsTable.id, lessonId));
+
+  revalidatePath(`/admin/courses/${courseId}`);
+  redirect(`/admin/courses/${courseId}`);
+}
