@@ -1,11 +1,9 @@
 "use client";
-import React, { use, useEffect } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useUser } from "@clerk/nextjs";
 import axios from "axios";
-import { User } from "lucide-react";
-import { UserDetailContext } from "@/context/UserDetailContext";
-import { useState } from "react";
+import { UserDetail, UserDetailContext } from "@/context/UserDetailContext";
 import Headers from "../app/_components/Header";
 
 function Provider({
@@ -14,30 +12,35 @@ function Provider({
 }: React.ComponentProps<typeof NextThemesProvider>) {
 
     const { user } = useUser();
-    const [userDetail, setUserDetail] = useState();
+    const [userDetail, setUserDetail] = useState<UserDetail | undefined>();
 
-    useEffect(() => {
-        user && CreateNewUser();
+    // POST /api/user is idempotent — it returns the existing row, or creates
+    // one on first sign-in. Used both for initial hydration and as the
+    // refresh path after XP / star balance changes.
+    const refreshUserDetail = useCallback(async () => {
+        if (!user) return;
+        try {
+            const result = await axios.post<UserDetail>("/api/user", {});
+            setUserDetail(result?.data);
+        } catch (err) {
+            console.error("Failed to refresh user detail:", err);
+        }
     }, [user]);
 
-    const CreateNewUser = async () => {
-        const result = await axios.post('/api/user', {});
-        console.log(result);
-        setUserDetail(result?.data);
-    };
+    useEffect(() => {
+        refreshUserDetail();
+    }, [refreshUserDetail]);
 
     return (
-        <NextThemesProvider
-            {...props}>
-            <UserDetailContext.Provider value={{ userDetail, setUserDetail }}>
+        <NextThemesProvider {...props}>
+            <UserDetailContext.Provider value={{ userDetail, setUserDetail, refreshUserDetail }}>
                 <div className="flex flex-col items-center">
-                    {/* Header / Nav Bar */}
                     <Headers />
                 </div>
                 {children}
             </UserDetailContext.Provider>
         </NextThemesProvider>
-    )
+    );
 }
 
 export default Provider;
