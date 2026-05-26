@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { createLessonAction } from "../../actions";
 
 type ChapterOption = { id: number; chapterId: number | null; name: string | null };
@@ -13,11 +14,13 @@ type Props = {
   chapters: ChapterOption[];
 };
 
+type LessonType = "video" | "pdf" | "exercise";
+
 const SELECT_STYLE =
   "flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400";
 
 export default function LessonForm({ courseId, chapters }: Props) {
-  const [type, setType] = useState<"video" | "pdf">("video");
+  const [type, setType] = useState<LessonType>("video");
   const [error, setError] = useState<string | null>(null);
 
   async function submit(formData: FormData) {
@@ -46,11 +49,12 @@ export default function LessonForm({ courseId, chapters }: Props) {
           <select
             name="type"
             value={type}
-            onChange={(e) => setType(e.target.value as "video" | "pdf")}
+            onChange={(e) => setType(e.target.value as LessonType)}
             className={SELECT_STYLE}
           >
             <option value="video">Video (YouTube / Vimeo / direct)</option>
             <option value="pdf">PDF / reading material</option>
+            <option value="exercise">Exercise (Sandpack)</option>
           </select>
         </div>
       </div>
@@ -66,7 +70,7 @@ export default function LessonForm({ courseId, chapters }: Props) {
         </div>
       </div>
 
-      {type === "video" ? (
+      {type === "video" && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
           <div className="flex flex-col gap-2">
             <label className="text-sm font-medium">Provider</label>
@@ -81,7 +85,9 @@ export default function LessonForm({ courseId, chapters }: Props) {
             <Input name="url" required placeholder="https://www.youtube.com/watch?v=…" />
           </div>
         </div>
-      ) : (
+      )}
+
+      {type === "pdf" && (
         <div className="flex flex-col gap-2">
           <label className="text-sm font-medium">PDF URL *</label>
           <Input
@@ -91,6 +97,100 @@ export default function LessonForm({ courseId, chapters }: Props) {
           />
           <p className="text-xs text-zinc-500">
             Upload to Cloudinary first (or any public PDF host) and paste the URL here.
+          </p>
+        </div>
+      )}
+
+      {type === "exercise" && (
+        <div className="flex flex-col gap-5 border-t border-zinc-200 dark:border-zinc-800 pt-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Difficulty</label>
+              <select name="difficulty" defaultValue="easy" className={SELECT_STYLE}>
+                <option value="easy">Easy</option>
+                <option value="medium">Medium</option>
+                <option value="hard">Hard</option>
+              </select>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Hint XP cost</label>
+              <Input name="hintXp" type="number" min="0" defaultValue="0" />
+              <p className="text-xs text-zinc-500">XP deducted if the learner peeks at the hint.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Content / Description (HTML) *</label>
+            <Textarea
+              name="content"
+              required
+              className="h-32 font-mono text-sm"
+              placeholder="<p>Welcome to the exercise. Here's what you'll be doing…</p>"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Task instructions (HTML) *</label>
+            <Textarea
+              name="task"
+              required
+              className="h-24 font-mono text-sm"
+              placeholder="<p>Add a &lt;title&gt; tag with the text Web Skeleton Adventure.</p>"
+            />
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Hint (HTML)</label>
+            <Textarea
+              name="hint"
+              className="h-24 font-mono text-sm"
+              placeholder="<p>Open the &lt;head&gt; and add &lt;title&gt;…&lt;/title&gt;.</p>"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Starter file *</label>
+              <Input name="starterFilename" required defaultValue="/index.html" placeholder="/index.html" />
+              <p className="text-xs text-zinc-500">Leading slash. Becomes the tab name in Sandpack.</p>
+            </div>
+            <div className="md:col-span-2 flex flex-col gap-2">
+              <label className="text-sm font-medium">Starter code</label>
+              <Textarea
+                name="starterCode"
+                className="h-40 font-mono text-sm"
+                placeholder={"<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <title></title>\n  </head>\n  <body>\n  </body>\n</html>"}
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Validation regex</label>
+              <Input
+                name="regex"
+                placeholder="(?i)<title>\\s*Web Skeleton Adventure\\s*</title>"
+                className="font-mono text-sm"
+              />
+              <p className="text-xs text-zinc-500">
+                Optional. JS-flavoured; <code>(?i)</code>-style inline flags are stripped and applied to the constructor.
+              </p>
+            </div>
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Expected output (substring)</label>
+              <Textarea
+                name="expectedOutput"
+                className="h-24 font-mono text-sm"
+                placeholder="<title>Web Skeleton Adventure</title>"
+              />
+              <p className="text-xs text-zinc-500">
+                Optional. Submission must contain this exact text. Combine with regex or use either alone.
+              </p>
+            </div>
+          </div>
+
+          <p className="text-xs text-zinc-500">
+            Leave both regex and expected output blank to make this lesson auto-pass when the learner clicks Mark Completed.
           </p>
         </div>
       )}
