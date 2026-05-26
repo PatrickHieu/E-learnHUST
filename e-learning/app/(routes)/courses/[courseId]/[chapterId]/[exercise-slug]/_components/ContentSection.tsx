@@ -2,6 +2,7 @@ import React from 'react'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Lightbulb, Goal } from 'lucide-react';
 import type { ExerciseLessonContent } from '@/config/schema';
+import { sanitizeLessonHtml } from '@/lib/sanitize';
 
 type Props = {
     title: string,
@@ -18,7 +19,7 @@ function ContentSection({ title, content, loading }: Props) {
                 :
                 <div>
                     <h2 className='font-game text-3xl my-3'>{title}</h2>
-                    <div dangerouslySetInnerHTML={{ __html: content.content }} />
+                    <div dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(content.content) }} />
 
                     <div>
                         <div className='flex mt-4 gap-2 items-center'>
@@ -26,7 +27,7 @@ function ContentSection({ title, content, loading }: Props) {
                             <h2 className='font-game text-3xl'>Task</h2>
                         </div>
                         <div>
-                            <div className='p-4 border rounded-2xl bg-zinc-800' dangerouslySetInnerHTML={{ __html: content.task }} />
+                            <div className='p-4 border rounded-2xl bg-zinc-800' dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(content.task) }} />
                         </div>
                     </div>
 
@@ -37,7 +38,7 @@ function ContentSection({ title, content, loading }: Props) {
                         </div>
 
                         <div>
-                            <div className='p-4 border rounded-2xl bg-zinc-800' dangerouslySetInnerHTML={{ __html: content.hint }} />
+                            <div className='p-4 border rounded-2xl bg-zinc-800' dangerouslySetInnerHTML={{ __html: sanitizeLessonHtml(content.hint) }} />
                         </div>
                     </div>
                 </div>
