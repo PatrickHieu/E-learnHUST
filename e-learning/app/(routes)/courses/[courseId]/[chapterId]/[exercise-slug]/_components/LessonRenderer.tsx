@@ -9,9 +9,11 @@ import ContentSection from "./ContentSection";
 import CodeEditor from "./CodeEditor";
 import VideoLesson from "./VideoLesson";
 import PdfLesson from "./PdfLesson";
+import QuizLesson from "./QuizLesson";
 import type {
   ExerciseLessonContent,
   PdfLessonContent,
+  QuizLessonContent,
   VideoLessonContent,
 } from "@/config/schema";
 import { UserDetailContext } from "@/context/UserDetailContext";
@@ -29,7 +31,7 @@ export type Lesson = {
   type: string; // 'video' | 'pdf' | 'exercise'
   title: string;
   xp: number;
-  content: VideoLessonContent | PdfLessonContent | ExerciseLessonContent;
+  content: VideoLessonContent | PdfLessonContent | ExerciseLessonContent | QuizLessonContent;
 };
 
 type Props = {
@@ -58,7 +60,37 @@ function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData 
     }
   };
 
+  const submitQuiz = async (selectedIndex: number) => {
+    if (!lesson) return;
+    try {
+      await axios.post("/api/lesson/complete", {
+        lessonId: lesson.id,
+        submission: String(selectedIndex),
+      });
+      toast.success("Correct!");
+      refreshData();
+      await refreshUserDetail();
+      router.refresh();
+    } catch (err: any) {
+      const reason = err?.response?.data?.reason;
+      toast.error(reason ?? "Failed to submit quiz answer");
+      // Re-throw so the QuizLesson component knows the submit didn't
+      // succeed and stays in pick mode.
+      throw err;
+    }
+  };
+
   if (!lesson) return null;
+
+  if (lesson.type === "quiz") {
+    return (
+      <QuizLesson
+        content={lesson.content as QuizLessonContent}
+        isCompleted={isCompleted}
+        onSubmit={submitQuiz}
+      />
+    );
+  }
 
   if (lesson.type === "exercise") {
     const exerciseContent = lesson.content as ExerciseLessonContent;
