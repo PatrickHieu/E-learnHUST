@@ -7,36 +7,19 @@ import { UserDetailContext } from '@/context/UserDetailContext';
 function UserStatus() {
 
     const { user } = useUser();
-
-    const { userDetail, setUserDetail } = useContext(UserDetailContext);
+    const { userDetail } = useContext(UserDetailContext);
 
     return (
         <div className='p-7 border-4 rounded-2xl'>
             <div className='flex items-center gap-3'>
                 <Image src={'/walking.gif'} alt="walking-user" width={100} height={100} />
-                <h2 className='font-game text-2xl'>{user?.primaryEmailAddress?.emailAddress}</h2>
+                <h2 className='font-game text-2xl break-all'>{user?.primaryEmailAddress?.emailAddress}</h2>
             </div>
-            <div className='grid grid-cols-2 gap-5'>
-                <div className='flex gap-3 items-center'>
-                    <Image src={'/star.png'} alt="star" width={35} height={35} />
-                    <div>
-                        <h2 className='font-game text-3xl'>{userDetail?.points}</h2>
-                        <h2 className='font-game text-gray-500 text-xl'>Total Rewards</h2>
-                    </div>
-                </div>
-                <div className='flex gap-3 items-center'>
-                    <Image src={'/badge.png'} alt="star" width={35} height={35} />
-                    <div>
-                        <h2 className='font-game text-3xl'>3</h2>
-                        <h2 className='font-game text-gray-500 text-xl'>Badge</h2>
-                    </div>
-                </div>
-                <div className='flex gap-3 items-center'>
-                    <Image src={'/fire.png'} alt="star" width={35} height={35} />
-                    <div>
-                        <h2 className='font-game text-3xl'>7</h2>
-                        <h2 className='font-game text-gray-500 text-xl'>Daily Streak</h2>
-                    </div>
+            <div className='flex gap-3 items-center mt-3'>
+                <Image src={'/star.png'} alt="star" width={35} height={35} />
+                <div>
+                    <h2 className='font-game text-3xl'>{userDetail?.points ?? 0}</h2>
+                    <h2 className='font-game text-gray-500 text-xl'>Total Rewards</h2>
                 </div>
             </div>
         </div>

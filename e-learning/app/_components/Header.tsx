@@ -82,31 +82,15 @@ function Header() {
               </NavigationMenuContent>
             </NavigationMenuItem>
 
-            {/* 2. Link Đơn Lẻ: Projects */}
-            <NavigationMenuItem>
-              <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent text-white hover:bg-zinc-800`}>
-                <Link href="/projects">Projects</Link>
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-
-            {/* 3. Link Đơn Lẻ: Leaderboard */}
             <NavigationMenuItem>
               <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent text-white hover:bg-zinc-800`}>
                 <Link href="/leaderboard">Leaderboard</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
 
-            {/* 4. Link Đơn Lẻ: Pricing */}
             <NavigationMenuItem>
               <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent text-white hover:bg-zinc-800`}>
                 <Link href="/pricing">Pricing</Link>
-              </NavigationMenuLink>
-            </NavigationMenuItem>
-
-            {/* 4. Link Đơn Lẻ: Contact Us */}
-            <NavigationMenuItem>
-              <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent text-white hover:bg-zinc-800`}>
-                <Link href="/contact-us">Contact Us</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
 

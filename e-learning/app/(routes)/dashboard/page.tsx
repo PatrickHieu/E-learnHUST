@@ -1,8 +1,6 @@
 import React from "react"
 import WelcomeBanner from "./_components/WelcomeBanner"
 import EnrolledCourses from "./_components/EnrolledCourses"
-import ExploreMore from "./_components/ExploreMore"
-import InviteFriend from "./_components/InviteFriend"
 import UserStatus from "./_components/UserStatus"
 import Upgrade from "./_components/Upgrade"
 import ExploreMoreCourses from "./_components/ExploreMoreCourses"
@@ -17,8 +15,6 @@ function Dashboard() {
                     <TrendingCourses />
                     <EnrolledCourses />
                     <ExploreMoreCourses />
-                    <ExploreMore />
-                    <InviteFriend />
                 </div>
                 <div>
                     <UserStatus />

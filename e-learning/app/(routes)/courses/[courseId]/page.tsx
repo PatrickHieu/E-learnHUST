@@ -7,7 +7,6 @@ import { Course } from '../_components/CourseList';
 import CourseChapter from './_components/CourseChapter';
 import CourseStatus from './_components/CourseStatus';
 import Upgrade from '../../dashboard/_components/Upgrade';
-import ComunityHelp from './_components/ComunityHelp';
 
 
 function CourseDetail() {
@@ -44,7 +43,6 @@ function CourseDetail() {
                 <div>
                     <CourseStatus courseDetail={CourseDetail} />
                     <Upgrade />
-                    <ComunityHelp />
                 </div>
             </div>
         </div>
