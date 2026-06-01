@@ -26,6 +26,73 @@ async function requireAdmin() {
   }
 }
 
+type BuildResult =
+  | { ok: true; content: Record<string, unknown> }
+  | { ok: false; error: string };
+
+// Shared between createLessonAction and updateLessonAction so the form
+// shape for each lesson type only lives in one place.
+function buildLessonContent(type: string, formData: FormData): BuildResult {
+  if (type === "video") {
+    const provider = (formData.get("provider") as string) || "youtube";
+    const url = (formData.get("url") as string)?.trim();
+    if (!url) return { ok: false, error: "Video URL is required" };
+    return { ok: true, content: { provider, url } };
+  }
+  if (type === "pdf") {
+    const pdfUrl = (formData.get("pdfUrl") as string)?.trim();
+    if (!pdfUrl) return { ok: false, error: "PDF URL is required" };
+    return { ok: true, content: { pdfUrl } };
+  }
+  if (type === "exercise") {
+    const exContent = (formData.get("content") as string)?.trim();
+    const task = (formData.get("task") as string)?.trim();
+    const hint = (formData.get("hint") as string)?.trim() ?? "";
+    const hintXp = Number(formData.get("hintXp") || 0);
+    const difficulty = (formData.get("difficulty") as string) || "easy";
+    const starterFilename = (formData.get("starterFilename") as string)?.trim();
+    const starterCodeText = (formData.get("starterCode") as string) ?? "";
+    const regex = (formData.get("regex") as string)?.trim() || undefined;
+    const expectedOutput = (formData.get("expectedOutput") as string) || undefined;
+    if (!exContent) return { ok: false, error: "Content (description) is required" };
+    if (!task) return { ok: false, error: "Task instructions are required" };
+    if (!starterFilename) return { ok: false, error: "Starter filename is required (e.g. /index.html)" };
+    return {
+      ok: true,
+      content: {
+        content: exContent,
+        task,
+        hint,
+        hintXp,
+        starterCode: { [starterFilename]: starterCodeText },
+        regex,
+        expectedOutput: expectedOutput && expectedOutput.trim() ? expectedOutput : undefined,
+        difficulty,
+      },
+    };
+  }
+  if (type === "quiz") {
+    const question = (formData.get("question") as string)?.trim();
+    const options = [1, 2, 3, 4]
+      .map((i) => (formData.get(`option${i}`) as string) ?? "")
+      .map((s) => s.trim());
+    const correctIndex = Number(formData.get("correctIndex"));
+    const explanation = (formData.get("explanation") as string)?.trim() || undefined;
+    if (!question) return { ok: false, error: "Question is required" };
+    if (options.some((o) => o.length === 0)) {
+      return { ok: false, error: "All four answer options are required" };
+    }
+    if (!Number.isInteger(correctIndex) || correctIndex < 0 || correctIndex >= 4) {
+      return { ok: false, error: "Pick which option is the correct answer" };
+    }
+    return {
+      ok: true,
+      content: { question, options, correctIndex, explanation },
+    };
+  }
+  return { ok: false, error: "Unsupported lesson type" };
+}
+
 export async function createChapterAction(courseId: number, formData: FormData) {
   await requireAdmin();
   const name = (formData.get("name") as string)?.trim();
@@ -103,50 +170,13 @@ export async function createLessonAction(courseId: number, formData: FormData) {
   if (!title) {
     return { success: false, error: "Lesson title is required" };
   }
-  if (type !== "video" && type !== "pdf" && type !== "exercise") {
+  if (type !== "video" && type !== "pdf" && type !== "exercise" && type !== "quiz") {
     return { success: false, error: "Unsupported lesson type" };
   }
 
-  let content: Record<string, unknown>;
-  if (type === "video") {
-    const provider = (formData.get("provider") as string) || "youtube";
-    const url = (formData.get("url") as string)?.trim();
-    if (!url) return { success: false, error: "Video URL is required" };
-    content = { provider, url };
-  } else if (type === "pdf") {
-    const pdfUrl = (formData.get("pdfUrl") as string)?.trim();
-    if (!pdfUrl) return { success: false, error: "PDF URL is required" };
-    content = { pdfUrl };
-  } else {
-    // Exercise. Build the ExerciseLessonContent payload from the form. Most
-    // fields are required so the student playground has something to render;
-    // regex / expectedOutput are optional (a lesson without them auto-passes
-    // the validation gate from feat28).
-    const exContent = (formData.get("content") as string)?.trim();
-    const task = (formData.get("task") as string)?.trim();
-    const hint = (formData.get("hint") as string)?.trim() ?? "";
-    const hintXp = Number(formData.get("hintXp") || 0);
-    const difficulty = (formData.get("difficulty") as string) || "easy";
-    const starterFilename = (formData.get("starterFilename") as string)?.trim();
-    const starterCodeText = (formData.get("starterCode") as string) ?? "";
-    const regex = (formData.get("regex") as string)?.trim() || undefined;
-    const expectedOutput = (formData.get("expectedOutput") as string) || undefined;
-
-    if (!exContent) return { success: false, error: "Content (description) is required" };
-    if (!task) return { success: false, error: "Task instructions are required" };
-    if (!starterFilename) return { success: false, error: "Starter filename is required (e.g. /index.html)" };
-
-    content = {
-      content: exContent,
-      task,
-      hint,
-      hintXp,
-      starterCode: { [starterFilename]: starterCodeText },
-      regex,
-      expectedOutput: expectedOutput && expectedOutput.trim() ? expectedOutput : undefined,
-      difficulty,
-    };
-  }
+  const contentResult = buildLessonContent(type, formData);
+  if (!contentResult.ok) return { success: false, error: contentResult.error };
+  const content = contentResult.content;
 
   // Auto orderIndex and slug so admins don't have to think about them.
   const [{ value: currentMax }] = await db
@@ -229,42 +259,9 @@ export async function updateLessonAction(
 
   // Type is intentionally not editable — switching type would invalidate
   // the existing content shape. Admin must delete + recreate to change type.
-  let content: Record<string, unknown>;
-  if (lesson.type === "video") {
-    const provider = (formData.get("provider") as string) || "youtube";
-    const url = (formData.get("url") as string)?.trim();
-    if (!url) return { success: false, error: "Video URL is required" };
-    content = { provider, url };
-  } else if (lesson.type === "pdf") {
-    const pdfUrl = (formData.get("pdfUrl") as string)?.trim();
-    if (!pdfUrl) return { success: false, error: "PDF URL is required" };
-    content = { pdfUrl };
-  } else {
-    const exContent = (formData.get("content") as string)?.trim();
-    const task = (formData.get("task") as string)?.trim();
-    const hint = (formData.get("hint") as string)?.trim() ?? "";
-    const hintXp = Number(formData.get("hintXp") || 0);
-    const difficulty = (formData.get("difficulty") as string) || "easy";
-    const starterFilename = (formData.get("starterFilename") as string)?.trim();
-    const starterCodeText = (formData.get("starterCode") as string) ?? "";
-    const regex = (formData.get("regex") as string)?.trim() || undefined;
-    const expectedOutput = (formData.get("expectedOutput") as string) || undefined;
-
-    if (!exContent) return { success: false, error: "Content (description) is required" };
-    if (!task) return { success: false, error: "Task instructions are required" };
-    if (!starterFilename) return { success: false, error: "Starter filename is required" };
-
-    content = {
-      content: exContent,
-      task,
-      hint,
-      hintXp,
-      starterCode: { [starterFilename]: starterCodeText },
-      regex,
-      expectedOutput: expectedOutput && expectedOutput.trim() ? expectedOutput : undefined,
-      difficulty,
-    };
-  }
+  const contentResult = buildLessonContent(lesson.type, formData);
+  if (!contentResult.ok) return { success: false, error: contentResult.error };
+  const content = contentResult.content;
 
   await db
     .update(LessonsTable)

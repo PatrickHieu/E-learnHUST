@@ -15,7 +15,7 @@ type Props = {
   chapters: ChapterOption[];
 };
 
-type LessonType = "video" | "pdf" | "exercise";
+type LessonType = "video" | "pdf" | "exercise" | "quiz";
 
 const SELECT_STYLE =
   "flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400";
@@ -82,6 +82,7 @@ export default function LessonForm({ courseId, chapters }: Props) {
             <option value="video">Video (YouTube / Vimeo / direct)</option>
             <option value="pdf">PDF / reading material</option>
             <option value="exercise">Exercise (Sandpack)</option>
+            <option value="quiz">Quiz (multiple choice)</option>
           </select>
         </div>
       </div>
@@ -237,6 +238,54 @@ export default function LessonForm({ courseId, chapters }: Props) {
           <p className="text-xs text-zinc-500">
             Leave both regex and expected output blank to make this lesson auto-pass when the learner clicks Mark Completed.
           </p>
+        </div>
+      )}
+
+      {type === "quiz" && (
+        <div className="flex flex-col gap-5 border-t border-zinc-200 dark:border-zinc-800 pt-5">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Question (HTML) *</label>
+            <Textarea
+              name="question"
+              required
+              className="h-24 font-mono text-sm"
+              placeholder="<p>Which tag wraps the document head?</p>"
+            />
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-medium">Answer options *</label>
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="correctIndex"
+                    value={i - 1}
+                    defaultChecked={i === 1}
+                    className="w-4 h-4"
+                  />
+                  <span className="w-4 text-zinc-500">{String.fromCharCode(64 + i)}</span>
+                </label>
+                <Input name={`option${i}`} required placeholder={`Option ${String.fromCharCode(64 + i)}`} />
+              </div>
+            ))}
+            <p className="text-xs text-zinc-500">
+              All four options are required. Tick the radio next to the correct answer.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Explanation (HTML)</label>
+            <Textarea
+              name="explanation"
+              className="h-20 font-mono text-sm"
+              placeholder="<p>The &lt;head&gt; element holds metadata.</p>"
+            />
+            <p className="text-xs text-zinc-500">
+              Optional. Shown to the student after they answer.
+            </p>
+          </div>
         </div>
       )}
 

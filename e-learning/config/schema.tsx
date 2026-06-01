@@ -62,7 +62,7 @@ export const CompletedLessonTable = pgTable('completedLesson', {
     completedAt: timestamp().defaultNow(),
 });
 
-export type LessonType = 'video' | 'pdf' | 'exercise';
+export type LessonType = 'video' | 'pdf' | 'exercise' | 'quiz';
 
 export type VideoLessonContent = {
     provider: 'youtube' | 'vimeo' | 'native';
@@ -86,7 +86,15 @@ export type ExerciseLessonContent = {
     difficulty?: 'easy' | 'medium' | 'hard';
 };
 
+export type QuizLessonContent = {
+    question: string;           // HTML
+    options: string[];          // 2–8 answers
+    correctIndex: number;       // 0-based; server-validated
+    explanation?: string;       // shown after answering
+};
+
 export type LessonContent =
     | ({ type: 'video' } & VideoLessonContent)
     | ({ type: 'pdf' } & PdfLessonContent)
-    | ({ type: 'exercise' } & ExerciseLessonContent);
+    | ({ type: 'exercise' } & ExerciseLessonContent)
+    | ({ type: 'quiz' } & QuizLessonContent);

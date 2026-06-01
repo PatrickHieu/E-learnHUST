@@ -1,4 +1,4 @@
-import type { ExerciseLessonContent } from "@/config/schema";
+import type { ExerciseLessonContent, QuizLessonContent } from "@/config/schema";
 
 export type ValidationResult =
   | { pass: true }
@@ -53,5 +53,25 @@ export function validateExerciseSubmission(
     return { pass: false, reason: "Expected output not found in your code" };
   }
 
+  return { pass: true };
+}
+
+// Quiz submission is the 0-based index of the picked option, sent as a
+// string from the form. Validate range first, then compare to the lesson's
+// correctIndex. Server-only — client can be bypassed.
+export function validateQuizSubmission(
+  content: QuizLessonContent,
+  submission: string,
+): ValidationResult {
+  if (typeof submission !== "string" || submission.length === 0) {
+    return { pass: false, reason: "Pick an answer before submitting." };
+  }
+  const picked = Number(submission);
+  if (!Number.isInteger(picked) || picked < 0 || picked >= content.options.length) {
+    return { pass: false, reason: "That isn't a valid choice." };
+  }
+  if (picked !== content.correctIndex) {
+    return { pass: false, reason: "Not quite — try again." };
+  }
   return { pass: true };
 }

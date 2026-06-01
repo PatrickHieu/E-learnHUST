@@ -224,6 +224,52 @@ export default function EditLessonForm({ courseId, lesson }: Props) {
         </div>
       )}
 
+      {lesson.type === "quiz" && (
+        <div className="flex flex-col gap-5 border-t border-zinc-200 dark:border-zinc-800 pt-5">
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Question (HTML) *</label>
+            <Textarea
+              name="question"
+              required
+              className="h-24 font-mono text-sm"
+              defaultValue={v.question ?? ""}
+            />
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <label className="text-sm font-medium">Answer options *</label>
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="radio"
+                    name="correctIndex"
+                    value={i}
+                    defaultChecked={i === (v.correctIndex ?? 0)}
+                    className="w-4 h-4"
+                  />
+                  <span className="w-4 text-zinc-500">{String.fromCharCode(65 + i)}</span>
+                </label>
+                <Input
+                  name={`option${i + 1}`}
+                  required
+                  defaultValue={(v.options as string[] | undefined)?.[i] ?? ""}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium">Explanation (HTML)</label>
+            <Textarea
+              name="explanation"
+              className="h-20 font-mono text-sm"
+              defaultValue={v.explanation ?? ""}
+            />
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="rounded-md border border-red-200 dark:border-red-900/60 bg-red-50 dark:bg-red-950/40 px-3 py-2 text-sm text-red-700 dark:text-red-300">
           {error}

@@ -8,10 +8,12 @@ import {
   LessonsTable,
   usersTable,
   type ExerciseLessonContent,
+  type QuizLessonContent,
 } from "@/config/schema";
 import {
   lessonRequiresValidation,
   validateExerciseSubmission,
+  validateQuizSubmission,
 } from "@/lib/lesson-validation";
 
 export async function POST(req: NextRequest) {
@@ -44,9 +46,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
   }
 
-  // Exercise lessons may require the submission to match a regex /
-  // expectedOutput before crediting completion. Server re-validates because
-  // the client check can be bypassed.
+  // Exercise + quiz lessons re-validate server-side; video / pdf auto-pass.
+  // Client check is convenience only — it can be bypassed.
   if (lesson.type === "exercise") {
     const exerciseContent = lesson.content as ExerciseLessonContent;
     if (lessonRequiresValidation(exerciseContent)) {
@@ -60,6 +61,18 @@ export async function POST(req: NextRequest) {
           { status: 422 },
         );
       }
+    }
+  } else if (lesson.type === "quiz") {
+    const quizContent = lesson.content as QuizLessonContent;
+    const result = validateQuizSubmission(
+      quizContent,
+      typeof submission === "string" ? submission : "",
+    );
+    if (!result.pass) {
+      return NextResponse.json(
+        { error: "Submission did not pass validation", reason: result.reason },
+        { status: 422 },
+      );
     }
   }
 

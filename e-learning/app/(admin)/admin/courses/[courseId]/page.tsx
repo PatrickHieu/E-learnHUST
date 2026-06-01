@@ -17,6 +17,7 @@ import {
   Code2,
   ArrowLeft,
   Pencil,
+  HelpCircle,
 } from "lucide-react";
 import { deleteChapterAction, deleteLessonAction } from "./actions";
 
@@ -25,6 +26,7 @@ type Props = { params: Promise<{ courseId: string }> };
 function lessonIcon(type: string) {
   if (type === "video") return <Video className="w-4 h-4 text-pink-500" />;
   if (type === "pdf") return <FileText className="w-4 h-4 text-blue-500" />;
+  if (type === "quiz") return <HelpCircle className="w-4 h-4 text-purple-500" />;
   return <Code2 className="w-4 h-4 text-green-500" />;
 }
 

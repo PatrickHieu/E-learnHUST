@@ -3,7 +3,7 @@ import { Course } from '../../_components/CourseList'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
 import { useAuth } from '@clerk/nextjs'
-import { Video, FileText, Code2 } from 'lucide-react'
+import { Video, FileText, Code2, HelpCircle } from 'lucide-react'
 
 import {
   Accordion,
@@ -27,6 +27,7 @@ type Props = {
 function lessonIcon(type: string) {
   if (type === 'video') return <Video className="w-5 h-5 text-pink-300" />;
   if (type === 'pdf') return <FileText className="w-5 h-5 text-blue-300" />;
+  if (type === 'quiz') return <HelpCircle className="w-5 h-5 text-purple-300" />;
   return <Code2 className="w-5 h-5 text-green-300" />;
 }
 
