@@ -7,7 +7,18 @@ import {
   EnrolledCourseTable,
   LessonsTable,
 } from "@/config/schema";
-import { eq, asc, desc, inArray, and, count, getTableColumns } from "drizzle-orm";
+import {
+  eq,
+  or,
+  asc,
+  desc,
+  ilike,
+  inArray,
+  and,
+  count,
+  getTableColumns,
+  type SQL,
+} from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
 
 export async function GET(req: NextRequest) {
@@ -179,6 +190,29 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(trending);
   }
 
-  const result = await db.select().from(CoursesTable);
+  // Default: list courses. Supports optional ?q=<text>&level=<level>
+  // filters for the /courses search UI. Text match runs across title and
+  // tags (case-insensitive substring) so "react" hits both a course
+  // titled "React Basics" and one tagged "react,frontend".
+  const q = searchParams.get("q")?.trim();
+  const level = searchParams.get("level")?.trim();
+
+  const conditions: SQL[] = [];
+  if (q) {
+    const pattern = `%${q}%`;
+    const textMatch = or(
+      ilike(CoursesTable.title, pattern),
+      ilike(CoursesTable.tags, pattern),
+    );
+    if (textMatch) conditions.push(textMatch);
+  }
+  if (level) {
+    conditions.push(eq(CoursesTable.level, level));
+  }
+
+  const result = conditions.length > 0
+    ? await db.select().from(CoursesTable).where(and(...conditions))
+    : await db.select().from(CoursesTable);
+
   return NextResponse.json(result);
 }

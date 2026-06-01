@@ -21,7 +21,7 @@ function Courses() {
                 <h2 className='font-game text-4xl'>
                     All Courses
                 </h2>
-                <CourseList/>
+                <CourseList showFilters />
             </div>
         </div>
     )
