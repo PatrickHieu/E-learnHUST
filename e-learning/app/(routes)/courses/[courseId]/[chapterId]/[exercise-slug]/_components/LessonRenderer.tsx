@@ -17,6 +17,7 @@ import type {
   VideoLessonContent,
 } from "@/config/schema";
 import { UserDetailContext } from "@/context/UserDetailContext";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const SplitterLayout = dynamic(() => import("react-splitter-layout"), {
   ssr: false,
@@ -45,6 +46,7 @@ type Props = {
 function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData }: Props) {
   const router = useRouter();
   const { refreshUserDetail } = useContext(UserDetailContext);
+  const isMobile = useIsMobile();
 
   const markCompleted = async () => {
     if (!lesson) return;
@@ -94,6 +96,25 @@ function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData 
 
   if (lesson.type === "exercise") {
     const exerciseContent = lesson.content as ExerciseLessonContent;
+    // SplitterLayout's horizontal split collapses both panes into unusable
+    // widths on phones. Below md we stack: prompt above, editor below.
+    if (isMobile) {
+      return (
+        <div className="h-full overflow-auto flex flex-col">
+          <div className="border-b-4 border-zinc-800">
+            <ContentSection title={lesson.title} content={exerciseContent} loading={loading} />
+          </div>
+          <div className="min-h-[60vh]">
+            <CodeEditor
+              lesson={{ id: lesson.id, title: lesson.title, content: exerciseContent }}
+              editorType={editorType}
+              isCompleted={isCompleted}
+              refreshData={refreshData}
+            />
+          </div>
+        </div>
+      );
+    }
     return (
       <SplitterLayout percentage primaryMinSize={40} secondaryMinSize={60}>
         <div className="h-full overflow-auto">
@@ -111,8 +132,8 @@ function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData 
     );
   }
 
-  // Non-exercise lessons share a layout: media on the left, mark-complete CTA
-  // along with title + description on the right.
+  // Video / PDF: media on top + sidebar on the right (desktop) → stacked
+  // vertically with media first (mobile).
   const mediaEl =
     lesson.type === "video" ? (
       <VideoLesson content={lesson.content as VideoLessonContent} title={lesson.title} />
@@ -121,9 +142,9 @@ function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData 
     );
 
   return (
-    <div className="flex h-full">
-      <div className="flex-1 h-full">{mediaEl}</div>
-      <aside className="w-96 p-6 border-l-4 border-zinc-800 bg-zinc-950 flex flex-col gap-4">
+    <div className="flex h-full flex-col md:flex-row">
+      <div className="flex-1 min-h-[40vh] md:min-h-0 md:h-full">{mediaEl}</div>
+      <aside className="w-full md:w-96 p-6 md:border-l-4 md:border-t-0 border-t-4 border-zinc-800 bg-zinc-950 flex flex-col gap-4">
         <h2 className="font-game text-3xl text-white">{lesson.title}</h2>
         <p className="font-game text-zinc-400">
           {lesson.type === "video"
@@ -135,7 +156,7 @@ function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData 
           size="lg"
           disabled={isCompleted}
           onClick={markCompleted}
-          className="font-game text-xl mt-auto"
+          className="font-game text-xl md:mt-auto"
         >
           {isCompleted ? "Already Completed" : `Mark Completed (+${lesson.xp} XP)`}
         </Button>

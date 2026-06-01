@@ -114,6 +114,8 @@ Run through this list when validating a release or after a large refactor. Tick 
 ### 5.3 Course browsing & enrollment
 
 - [ ] `/courses` lists every course with banner, level, and title
+- [ ] **Search & filter** (feat45): typing in the search input narrows the grid by title/tag within ~300ms; clicking a level chip filters by that level; combining both ANDs them; "All" clears the level
+- [ ] **Empty state** appears when no course matches the search
 - [ ] `/courses/<id>` shows the banner, description, and **Enroll** button
 - [ ] For a free course → click Enroll → toast says "Course enrolled successfully!" and row appears in `enrolledCourse` (userId is the Clerk `user.id`, not email — feat22)
 - [ ] Re-clicking Enroll does not create a duplicate row (feat19 idempotency)
@@ -133,7 +135,18 @@ Run through this list when validating a release or after a large refactor. Tick 
 - [ ] PDF iframe renders the file (Cloudinary `raw/upload` or any direct PDF URL)
 - [ ] Mark Completed credits XP
 
-### 5.6 Playground — exercise lesson
+### 5.6 Playground — quiz lesson (feat46)
+
+- [ ] Open a quiz lesson from the chapter listing (purple `?` icon)
+- [ ] Question + 4 lettered (A/B/C/D) options render
+- [ ] Click an option → it highlights yellow; click another → highlight moves
+- [ ] **Submit Answer** without picking → button disabled
+- [ ] Submit a wrong pick → that row turns red, toast says "Not quite — try again", picker stays interactive
+- [ ] Submit the correct pick → that row turns green with a check, explanation appears (if set), lesson marked completed and XP credited
+- [ ] Revisiting after completion → answer is already revealed in green
+- [ ] Bypass attempt — same `fetch` payload with `submission: "99"` for a quiz → 422 reject
+
+### 5.7 Playground — exercise lesson
 
 - [ ] Sandpack loads with the starter code on the right
 - [ ] **Run Code** button refreshes the preview
@@ -141,14 +154,14 @@ Run through this list when validating a release or after a large refactor. Tick 
 - [ ] Edit the code so it matches the regex / expectedOutput → click Mark Completed → toast success, XP credited, button switches to "Already Completed !"
 - [ ] Bypass attempt — open DevTools and `fetch('/api/lesson/complete', {method:'POST', body: JSON.stringify({lessonId: <id>}), headers: {'content-type':'application/json'}})` for an exercise lesson → server returns **422** with a `reason` field; no XP credited
 
-### 5.7 Leaderboard
+### 5.8 Leaderboard
 
 - [ ] `/leaderboard` ranks users by `points DESC`; your row is highlighted yellow with "(you)" suffix
 - [ ] Top 3 rows show crown / trophy / medal icons
 - [ ] Emails are masked (`pa***@domain.com`)
 - [ ] Earn XP → refresh → rank updates
 
-### 5.8 Admin — Courses
+### 5.9 Admin — Courses
 
 - [ ] `/admin/users` redirects librarians to `/admin` (feat33 middleware split)
 - [ ] `/admin` overview shows real **Total Courses / Registered Users / Active Enrollments** counts (no `$2,450` placeholder — feat34)
@@ -157,7 +170,7 @@ Run through this list when validating a release or after a large refactor. Tick 
 - [ ] **Edit course** → change the title → save → list reflects the change
 - [ ] **Delete course** → confirms before deleting → row gone
 
-### 5.9 Admin — Chapters & Lessons (feat35, 36, 37, 38)
+### 5.10 Admin — Chapters & Lessons (feat35, 36, 37, 38, 46)
 
 - [ ] Click the **ListTree** icon on a course row → lands on the per-course manager (was a 404 before feat35)
 - [ ] **New Chapter** → fill in name + desc → save → chapter appears with auto-assigned `#N`
@@ -166,10 +179,11 @@ Run through this list when validating a release or after a large refactor. Tick 
 - [ ] **New Lesson** → pick chapter → choose **Video** → paste YouTube URL → save (feat35)
 - [ ] **New Lesson** → choose **PDF** → upload a `.pdf` file → "Uploading & Saving…" → row created with the Cloudinary URL (feat38)
 - [ ] **New Lesson** → choose **Exercise** → fill content / task / starter file / regex / expected output → save (feat36)
+- [ ] **New Lesson** → choose **Quiz** → fill question + 4 options + tick the correct radio → save (feat46)
 - [ ] **Edit Lesson** (pencil on a lesson row) → form pre-populates from existing content per type → change a field → save (feat37)
 - [ ] **Delete Lesson** removes the row and cleans up `completedLesson` references (no orphan rows)
 
-### 5.10 Admin — Users & Librarian role
+### 5.11 Admin — Users & Librarian role
 
 - [ ] Sign in as Admin → `/admin/users` loads (librarians get redirected to `/admin`)
 - [ ] Each user row shows a colored role badge (Admin / Librarian / Student)
@@ -181,11 +195,30 @@ Run through this list when validating a release or after a large refactor. Tick 
 - [ ] Sidebar does NOT show the **Users** link
 - [ ] Librarian can still create / edit / delete chapters + lessons in `/admin/courses`
 
-### 5.11 Cross-cutting
+### 5.12 Course completion certificate (feat47)
+
+- [ ] Enroll in a course with ≥1 lesson and complete every lesson
+- [ ] On `/courses/<id>` the sidebar Course Progress card now shows a yellow **Download Certificate** button below the XP bar
+- [ ] Click it → browser downloads `certificate-<course-slug>.pdf`
+- [ ] Open the PDF: landscape A4 with double yellow border; your name (or email if no full name set on Clerk), the course title, today's date
+- [ ] The button is hidden while the course has any incomplete lessons
+
+### 5.13 Mobile playground (feat48)
+
+Open `/courses/<id>/<chapter>/<slug>` on a phone, or shrink the browser to <768px:
+
+- [ ] **Exercise lesson** — prompt and Sandpack editor stack vertically instead of side-by-side (no compressed unusable panes)
+- [ ] **Video lesson** — video on top, "Mark Completed" sidebar below it (instead of right of it)
+- [ ] **PDF lesson** — same stacked layout
+- [ ] **Quiz lesson** — already single-column, looks unchanged
+- [ ] **Bottom nav** — Previous/Next buttons fit; the wide "You can Earn N Xp" text collapses to a compact "N XP" badge with the star icon
+
+### 5.14 Cross-cutting
 
 - [ ] XSS sanity: in an admin form, paste `<img src=x onerror=alert(1)>` into a lesson `content` field → save → open as a student → no alert fires; the `<img src=x>` may render (broken image) but the `onerror` is stripped (feat40)
 - [ ] No `@ts-ignore` comments remain in `app/api/course/route.ts` (feat27 / Phase 2 type-safety principle)
 - [ ] After completing a lesson, the **dashboard star count updates without a hard refresh** (feat39)
+- [ ] Header nav doesn't expose `/projects` or `/contact-us` 404 links (feat44)
 
 ---
 

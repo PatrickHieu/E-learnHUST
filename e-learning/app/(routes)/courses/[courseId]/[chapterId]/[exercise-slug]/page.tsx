@@ -82,18 +82,22 @@ function Playground() {
           refreshData={fetchLesson}
         />
       </div>
-      <div className='font-game fixed bottom-0 w-full bg-zinc-900 flex p-4 justify-between items-center'>
+      <div className='font-game fixed bottom-0 w-full bg-zinc-900 flex p-3 md:p-4 justify-between items-center gap-2'>
         <Link href={prevRoute}>
-          <Button variant={'pixel'} size={'lg'}>Previous</Button>
+          <Button variant={'pixel'} size={'sm'} className="md:size-lg md:text-lg">Previous</Button>
         </Link>
-        <div className='flex gap-3 items-center'>
+        <div className='hidden md:flex gap-3 items-center'>
           <Image src='/star.png' alt='star' width={40} height={40} />
           <h2 className='text-2xl'>
             You can Earn <span className='text-4xl text-yellow-300'>{data?.lesson?.xp ?? 0}</span> Xp
           </h2>
         </div>
+        <div className='flex md:hidden items-center gap-2 text-yellow-300 font-game'>
+          <Image src='/star.png' alt='star' width={24} height={24} />
+          <span className="text-base">{data?.lesson?.xp ?? 0} XP</span>
+        </div>
         <Link href={nextRoute}>
-          <Button variant={'pixel'} size={'lg'}>Next</Button>
+          <Button variant={'pixel'} size={'sm'} className="md:size-lg md:text-lg">Next</Button>
         </Link>
       </div>
     </div>
