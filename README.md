@@ -155,6 +155,57 @@ Every PR opened against `main` gets its own preview URL — useful for QA before
 |---|---|---|
 | Phase 1 | feat01–feat16 | Initial build: pixel-themed student UI, basic admin CRUD, Sandpack playground |
 | Phase 2 | feat17–feat41 | Security pass, multi-modal lessons, RBAC w/ Librarian, professional admin UI, unit tests + QA guide |
-| Phase 3 | feat42+ | CI/CD, deployment, polish, quizzes, certificates, mobile playground |
+| Phase 3 | feat42–feat48 | CI/CD, Vercel deployment, dead-link cleanup, course search, quizzes, certificates, mobile playground |
 
 See individual PR descriptions in GitHub for what each branch did.
+
+---
+
+## Phase 3 handoff
+
+Done as of feat48. The project is a usable internal demo:
+
+### What you can do today
+- Sign in, enroll in a course, work through video / PDF / coding / quiz lessons
+- Earn XP and stars; spend stars to unlock paid courses; appear on the leaderboard
+- Complete every lesson in a course → download a PDF completion certificate
+- As an admin: create / edit / delete courses, chapters, and lessons of all four types via shadcn admin UI
+- As an admin: promote any user to Librarian for content-only access
+- As a librarian: same content tools, no user management
+- All of the above on a phone — the playground stacks vertically below 768px
+
+### Live demo
+
+| | |
+|---|---|
+| URL | `https://<your-vercel-project>.vercel.app` (paste yours here after deploy) |
+| Demo accounts setup | See [TESTING.md § 2](./e-learning/TESTING.md#2-creating-test-accounts) — must be created via Clerk dashboard, no scripted bootstrap |
+| QA checklist | [TESTING.md § 5](./e-learning/TESTING.md#5-manual-qa-checklist) — 14 areas, ~70 boxes, ties each back to the feat# that introduced the behaviour |
+
+### What's intentionally NOT in this demo
+
+Cut from the original 4-week roadmap because we compressed to 2 weeks:
+
+| | Reason |
+|---|---|
+| Sentry / error monitoring | Internal demo; server logs are enough |
+| SEO metadata / Open Graph / sitemap | No public traffic to optimize for |
+| Real daily-streak + badges system | Engagement features for Phase 4 if this ever ships publicly |
+| Email notifications | No SMTP wired up |
+| i18n unification | Mixed Vietnamese / English strings stay |
+| Performance / SSR audit | Defer until traffic data exists |
+| Certificate issuance audit log | Certs are generated client-side; not recorded in DB |
+| Multi-file Sandpack starter code editing | Admin form supports single file only — Phase 4 |
+| Replace the hardcoded Cloudinary cloud-name / preset with env vars | They're public-side (unsigned upload) anyway |
+
+### Known minor TODOs left intentionally
+
+These came up during Phase 3 but weren't worth their own branch:
+
+- `afterSignOutUrl` prop on `UserButton` is Clerk-deprecated (the warning appears in the IDE on the admin layout). Replace with the v6 equivalent when convenient.
+- Pre-existing Tailwind canonical-class hints (`h-[100px]` → `h-25`) on a few legacy skeletons — purely cosmetic IDE warnings.
+- A few `console.log` statements remain in fetch handlers — fine for the demo, strip before any real launch.
+
+### If a future maintainer picks this up
+
+Start with [TESTING.md § 1](./e-learning/TESTING.md#1-roles--permissions) and the Phase 2/3 PR descriptions on GitHub. The phase tables above tell you which `feat<N>` branch introduced what, so you can `git log feat<N>` to see the design rationale in commit messages.
