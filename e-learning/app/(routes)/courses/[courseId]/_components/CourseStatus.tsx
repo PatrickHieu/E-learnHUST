@@ -3,6 +3,7 @@ import Image from 'next/image'
 import { Progress } from '@/components/ui/progress'
 import { Course } from '../../_components/CourseList'
 import { useState } from 'react'
+import CertificateButton from './CertificateButton'
 
 
 type Props = {
@@ -63,6 +64,10 @@ function CourseStatus({ courseDetail }: Props) {
           <Progress value={pct(xpEarned, totalXp)} className='mt-2' />
         </div>
       </div>
+
+      {totalLessons > 0 && completedCount >= totalLessons && courseDetail?.title && (
+        <CertificateButton courseTitle={courseDetail.title} />
+      )}
     </div>
   )
 }
