@@ -62,12 +62,40 @@ export const CompletedLessonTable = pgTable('completedLesson', {
     completedAt: timestamp().defaultNow(),
 });
 
+// Per-checkpoint completion for in-video quizzes. A video lesson's
+// inVideoQuizzes array is index-stable; checkpointIndex refers to that
+// position. When every checkpoint in a video has a row here for a given
+// user, the video lesson itself auto-completes (an entry lands in
+// completedLesson).
+export const CompletedVideoQuizTable = pgTable('completedVideoQuiz', {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userId: varchar().notNull(),
+    courseId: integer().notNull(),
+    chapterId: integer().notNull(),
+    lessonId: integer().notNull(),
+    checkpointIndex: integer().notNull(),
+    completedAt: timestamp().defaultNow(),
+});
+
 export type LessonType = 'video' | 'pdf' | 'exercise' | 'quiz';
+
+// A quiz that pops up mid-video at a specific timestamp. Playback pauses,
+// the question is shown as an overlay, and the student must answer it
+// correctly before the video resumes. XP is credited per checkpoint.
+export type VideoQuizCheckpoint = {
+    timestamp: number;          // seconds into the video
+    question: string;           // HTML
+    options: string[];          // 2–8 answers (the admin UI fixes this at 4)
+    correctIndex: number;       // 0-based, server-validated
+    xp: number;
+    explanation?: string;       // shown after a correct answer
+};
 
 export type VideoLessonContent = {
     provider: 'youtube' | 'vimeo' | 'native';
     url: string;
     durationSec?: number;
+    inVideoQuizzes?: VideoQuizCheckpoint[];
 };
 
 export type PdfLessonContent = {
