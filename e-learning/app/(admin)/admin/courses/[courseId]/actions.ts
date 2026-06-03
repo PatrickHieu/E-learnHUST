@@ -37,7 +37,53 @@ function buildLessonContent(type: string, formData: FormData): BuildResult {
     const provider = (formData.get("provider") as string) || "youtube";
     const url = (formData.get("url") as string)?.trim();
     if (!url) return { ok: false, error: "Video URL is required" };
-    return { ok: true, content: { provider, url } };
+
+    // In-video quiz checkpoints come through as a JSON string set by the
+    // hidden input in CheckpointsEditor. Optional; valid forms can have
+    // zero checkpoints (just a plain video).
+    const rawCheckpoints = (formData.get("inVideoQuizzes") as string) ?? "";
+    let checkpoints: unknown[] = [];
+    if (rawCheckpoints) {
+      try {
+        const parsed = JSON.parse(rawCheckpoints);
+        if (!Array.isArray(parsed)) {
+          return { ok: false, error: "Checkpoints payload must be an array" };
+        }
+        checkpoints = parsed;
+      } catch {
+        return { ok: false, error: "Could not parse checkpoint data" };
+      }
+    }
+    for (let i = 0; i < checkpoints.length; i++) {
+      const cp = checkpoints[i] as Record<string, unknown>;
+      if (typeof cp?.timestamp !== "number" || cp.timestamp < 0) {
+        return { ok: false, error: `Checkpoint #${i + 1}: timestamp must be a non-negative number` };
+      }
+      if (typeof cp?.question !== "string" || !cp.question.trim()) {
+        return { ok: false, error: `Checkpoint #${i + 1}: question is required` };
+      }
+      if (
+        !Array.isArray(cp?.options) ||
+        cp.options.length !== 4 ||
+        cp.options.some((o) => typeof o !== "string" || !(o as string).trim())
+      ) {
+        return { ok: false, error: `Checkpoint #${i + 1}: all four options are required` };
+      }
+      if (
+        typeof cp?.correctIndex !== "number" ||
+        !Number.isInteger(cp.correctIndex) ||
+        cp.correctIndex < 0 ||
+        cp.correctIndex >= 4
+      ) {
+        return { ok: false, error: `Checkpoint #${i + 1}: pick which option is correct` };
+      }
+      if (typeof cp?.xp !== "number" || cp.xp < 0) {
+        return { ok: false, error: `Checkpoint #${i + 1}: XP must be a non-negative number` };
+      }
+    }
+    const content: Record<string, unknown> = { provider, url };
+    if (checkpoints.length > 0) content.inVideoQuizzes = checkpoints;
+    return { ok: true, content };
   }
   if (type === "pdf") {
     const pdfUrl = (formData.get("pdfUrl") as string)?.trim();
