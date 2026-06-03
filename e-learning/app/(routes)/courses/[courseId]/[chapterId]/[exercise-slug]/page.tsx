@@ -22,6 +22,7 @@ type LessonResponse = {
   lesson: Lesson,
   siblings: Sibling[],
   completedLessonIds: number[],
+  completedCheckpointIndexes: number[],
   editorType: string | null,
 };
 
@@ -80,6 +81,7 @@ function Playground() {
           isCompleted={isCompleted}
           loading={loading}
           refreshData={fetchLesson}
+          completedCheckpointIndexes={data?.completedCheckpointIndexes ?? []}
         />
       </div>
       <div className='font-game fixed bottom-0 w-full bg-zinc-900 flex p-3 md:p-4 justify-between items-center gap-2'>

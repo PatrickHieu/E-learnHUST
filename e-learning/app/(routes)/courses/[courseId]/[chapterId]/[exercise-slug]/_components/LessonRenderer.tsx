@@ -41,9 +41,17 @@ type Props = {
   isCompleted: boolean;
   loading: boolean;
   refreshData: () => void;
+  completedCheckpointIndexes?: number[];
 };
 
-function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData }: Props) {
+function LessonRenderer({
+  lesson,
+  editorType,
+  isCompleted,
+  loading,
+  refreshData,
+  completedCheckpointIndexes = [],
+}: Props) {
   const router = useRouter();
   const { refreshUserDetail } = useContext(UserDetailContext);
   const isMobile = useIsMobile();
@@ -134,9 +142,27 @@ function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData 
 
   // Video / PDF: media on top + sidebar on the right (desktop) → stacked
   // vertically with media first (mobile).
+  const videoContent = lesson.type === "video" ? (lesson.content as VideoLessonContent) : null;
+  const hasInVideoQuizzes = (videoContent?.inVideoQuizzes?.length ?? 0) > 0;
+
+  // Auto-complete videos with checkpoints — the server lights up
+  // completedLesson when the last checkpoint passes, so we just need to
+  // refresh after the overlay tells us it happened.
+  const onVideoAutoComplete = async () => {
+    refreshData();
+    await refreshUserDetail();
+    router.refresh();
+  };
+
   const mediaEl =
-    lesson.type === "video" ? (
-      <VideoLesson content={lesson.content as VideoLessonContent} title={lesson.title} />
+    lesson.type === "video" && videoContent ? (
+      <VideoLesson
+        content={videoContent}
+        title={lesson.title}
+        lessonId={lesson.id}
+        completedCheckpointIndexes={completedCheckpointIndexes}
+        onLessonComplete={onVideoAutoComplete}
+      />
     ) : (
       <PdfLesson content={lesson.content as PdfLessonContent} title={lesson.title} />
     );
@@ -147,19 +173,31 @@ function LessonRenderer({ lesson, editorType, isCompleted, loading, refreshData 
       <aside className="w-full md:w-96 p-6 md:border-l-4 md:border-t-0 border-t-4 border-zinc-800 bg-zinc-950 flex flex-col gap-4">
         <h2 className="font-game text-3xl text-white">{lesson.title}</h2>
         <p className="font-game text-zinc-400">
-          {lesson.type === "video"
+          {hasInVideoQuizzes
+            ? "Answer the in-video checkpoint quizzes correctly to finish this lesson."
+            : lesson.type === "video"
             ? "Watch the lecture, then mark this lesson complete to earn XP."
             : "Read through the document, then mark this lesson complete to earn XP."}
         </p>
-        <Button
-          variant="pixel"
-          size="lg"
-          disabled={isCompleted}
-          onClick={markCompleted}
-          className="font-game text-xl md:mt-auto"
-        >
-          {isCompleted ? "Already Completed" : `Mark Completed (+${lesson.xp} XP)`}
-        </Button>
+        {/* Videos with checkpoints auto-complete on the last correct
+            answer; hide the Mark Completed button so the student isn't
+            tempted to skip the quizzes. */}
+        {!hasInVideoQuizzes && (
+          <Button
+            variant="pixel"
+            size="lg"
+            disabled={isCompleted}
+            onClick={markCompleted}
+            className="font-game text-xl md:mt-auto"
+          >
+            {isCompleted ? "Already Completed" : `Mark Completed (+${lesson.xp} XP)`}
+          </Button>
+        )}
+        {hasInVideoQuizzes && isCompleted && (
+          <div className="font-game text-xl text-green-400 mt-auto">
+            Lesson completed.
+          </div>
+        )}
       </aside>
     </div>
   );

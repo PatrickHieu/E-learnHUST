@@ -1,10 +1,14 @@
 "use client";
 import React from "react";
 import type { VideoLessonContent } from "@/config/schema";
+import NativeVideoWithCheckpoints from "./NativeVideoWithCheckpoints";
 
 type Props = {
   content: VideoLessonContent;
   title: string;
+  lessonId: number;
+  completedCheckpointIndexes: number[];
+  onLessonComplete: () => void;
 };
 
 function youtubeIdFromUrl(url: string): string | null {
@@ -32,12 +36,22 @@ function vimeoIdFromUrl(url: string): string | null {
   }
 }
 
-function VideoLesson({ content, title }: Props) {
+function VideoLesson({
+  content,
+  title,
+  lessonId,
+  completedCheckpointIndexes,
+  onLessonComplete,
+}: Props) {
   const { provider, url } = content;
+  const checkpoints = content.inVideoQuizzes ?? [];
 
   if (provider === "youtube") {
     const id = youtubeIdFromUrl(url);
     if (!id) return <UnplayableVideo url={url} />;
+    // YouTube checkpoint support arrives in feat52 (YouTube IFrame Player
+    // API). For now, embed plays normally; any inVideoQuizzes are ignored
+    // until that branch lands.
     return (
       <iframe
         title={title}
@@ -63,7 +77,22 @@ function VideoLesson({ content, title }: Props) {
     );
   }
 
-  // native: direct video file URL (e.g. Cloudinary video delivery)
+  // native: direct video file URL (e.g. Cloudinary video delivery).
+  // Checkpoints are supported here because we control playback via the
+  // <video> element ref.
+  if (checkpoints.length > 0) {
+    return (
+      <NativeVideoWithCheckpoints
+        url={url}
+        title={title}
+        lessonId={lessonId}
+        checkpoints={checkpoints}
+        initiallyCompletedIndexes={completedCheckpointIndexes}
+        onLessonComplete={onLessonComplete}
+      />
+    );
+  }
+
   return (
     <video
       controls
