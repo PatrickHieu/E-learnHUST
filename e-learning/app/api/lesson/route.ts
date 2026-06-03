@@ -4,6 +4,7 @@ import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/config/db";
 import {
   CompletedLessonTable,
+  CompletedVideoQuizTable,
   CourseChapterTable,
   CoursesTable,
   LessonsTable,
@@ -95,11 +96,29 @@ export async function POST(req: NextRequest) {
     .where(eq(CoursesTable.courseId, courseId))
     .limit(1);
 
+  // For video lessons with in-video quiz checkpoints we also surface which
+  // checkpoint indexes the student has already answered, so the player
+  // doesn't make them repeat them after a reload.
+  let completedCheckpointIndexes: number[] = [];
+  if (lesson.type === "video") {
+    const completedCheckpoints = await db
+      .select({ checkpointIndex: CompletedVideoQuizTable.checkpointIndex })
+      .from(CompletedVideoQuizTable)
+      .where(
+        and(
+          eq(CompletedVideoQuizTable.userId, userId),
+          eq(CompletedVideoQuizTable.lessonId, lesson.id),
+        ),
+      );
+    completedCheckpointIndexes = completedCheckpoints.map((c) => c.checkpointIndex);
+  }
+
   return NextResponse.json({
     chapter,
     lesson,
     siblings,
     completedLessonIds: completed.map((c) => c.lessonId),
+    completedCheckpointIndexes,
     editorType: course?.editorType ?? null,
   });
 }
