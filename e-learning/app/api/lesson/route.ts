@@ -9,6 +9,7 @@ import {
   CoursesTable,
   LessonsTable,
 } from "@/config/schema";
+import { isChapterUnlocked, isLessonGating } from "@/lib/chapter-gating";
 
 // Returns a single lesson plus sibling-lesson navigation metadata for the
 // student playground.
@@ -48,6 +49,69 @@ export async function POST(req: NextRequest) {
 
   if (!lesson) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
+  }
+
+  // Chapter gate: block lesson access when an earlier chapter still has
+  // gating lessons the student hasn't completed. We pull the minimum
+  // needed — every chapter in the course + its gating lessons + the
+  // user's completedLesson IDs for the course — and run the same helper
+  // the chapter listing UI uses.
+  const allChapters = await db
+    .select({
+      chapterId: CourseChapterTable.chapterId,
+      id: CourseChapterTable.id,
+    })
+    .from(CourseChapterTable)
+    .where(eq(CourseChapterTable.courseId, courseId))
+    .orderBy(asc(CourseChapterTable.chapterId));
+
+  const allLessonsForGating = await db
+    .select({
+      id: LessonsTable.id,
+      chapterId: LessonsTable.chapterId,
+      type: LessonsTable.type,
+      content: LessonsTable.content,
+    })
+    .from(LessonsTable)
+    .where(eq(LessonsTable.courseId, courseId));
+
+  const allCompletedForCourse = await db
+    .select({ lessonId: CompletedLessonTable.lessonId })
+    .from(CompletedLessonTable)
+    .where(
+      and(
+        eq(CompletedLessonTable.userId, userId),
+        eq(CompletedLessonTable.courseId, courseId),
+      ),
+    );
+
+  const chaptersForGating = allChapters.map((ch) => ({
+    lessons: allLessonsForGating
+      .filter((l) => l.chapterId === ch.chapterId)
+      .map((l) => ({
+        id: l.id,
+        gating: isLessonGating({ type: l.type, content: l.content }),
+      })),
+  }));
+
+  const requestedChapterIndex = allChapters.findIndex(
+    (ch) => ch.chapterId === chapterId,
+  );
+  if (
+    requestedChapterIndex >= 0 &&
+    !isChapterUnlocked(
+      chaptersForGating,
+      requestedChapterIndex,
+      allCompletedForCourse.map((c) => c.lessonId),
+    )
+  ) {
+    return NextResponse.json(
+      {
+        error: "Chapter locked",
+        reason: "Complete the previous chapter's quizzes and exercises first.",
+      },
+      { status: 403 },
+    );
   }
 
   const [chapter] = await db
