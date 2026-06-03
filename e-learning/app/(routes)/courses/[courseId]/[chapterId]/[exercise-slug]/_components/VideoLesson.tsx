@@ -2,6 +2,7 @@
 import React from "react";
 import type { VideoLessonContent } from "@/config/schema";
 import NativeVideoWithCheckpoints from "./NativeVideoWithCheckpoints";
+import YouTubeWithCheckpoints from "./YouTubeWithCheckpoints";
 
 type Props = {
   content: VideoLessonContent;
@@ -49,9 +50,18 @@ function VideoLesson({
   if (provider === "youtube") {
     const id = youtubeIdFromUrl(url);
     if (!id) return <UnplayableVideo url={url} />;
-    // YouTube checkpoint support arrives in feat52 (YouTube IFrame Player
-    // API). For now, embed plays normally; any inVideoQuizzes are ignored
-    // until that branch lands.
+    if (checkpoints.length > 0) {
+      return (
+        <YouTubeWithCheckpoints
+          videoId={id}
+          title={title}
+          lessonId={lessonId}
+          checkpoints={checkpoints}
+          initiallyCompletedIndexes={completedCheckpointIndexes}
+          onLessonComplete={onLessonComplete}
+        />
+      );
+    }
     return (
       <iframe
         title={title}
