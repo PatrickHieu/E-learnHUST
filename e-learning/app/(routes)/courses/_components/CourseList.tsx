@@ -40,9 +40,12 @@ export type Lesson = {
     chapterId: number,
     slug: string,
     orderIndex: number,
-    type: string, // 'video' | 'pdf' | 'exercise'
+    type: string, // 'video' | 'pdf' | 'exercise' | 'quiz'
     title: string,
     xp: number,
+    // Set by /api/course; true for quiz, exercise, and video lessons with
+    // in-video quiz checkpoints. See lib/chapter-gating.ts.
+    gating?: boolean,
 }
 
 type Props = {

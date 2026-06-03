@@ -31,9 +31,11 @@ function Playground() {
   const slug = useParams()['exercise-slug'];
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<LessonResponse>();
+  const [accessError, setAccessError] = useState<string | null>(null);
 
   const fetchLesson = async () => {
     setLoading(true);
+    setAccessError(null);
     try {
       const result = await axios.post('/api/lesson', {
         courseId: parseInt(courseId as string),
@@ -41,8 +43,15 @@ function Playground() {
         slug: slug as string,
       });
       setData(result.data);
-    } catch (error) {
-      console.error('Error fetching lesson:', error);
+    } catch (error: any) {
+      if (error?.response?.status === 403) {
+        setAccessError(
+          error?.response?.data?.reason ??
+            "Complete the previous chapter to access this lesson.",
+        );
+      } else {
+        console.error('Error fetching lesson:', error);
+      }
     } finally {
       setLoading(false);
     }
@@ -71,6 +80,22 @@ function Playground() {
     : `/courses/${courseId}`;
 
   const isCompleted = !!(data?.lesson && data?.completedLessonIds?.includes(data.lesson.id));
+
+  if (accessError) {
+    return (
+      <div className="border-t-4 h-screen w-full flex items-center justify-center p-10">
+        <div className="max-w-md text-center font-game">
+          <h2 className="text-4xl text-yellow-300 mb-4">Chapter locked</h2>
+          <p className="text-xl text-zinc-300 mb-6">{accessError}</p>
+          <Link href={`/courses/${courseId}`}>
+            <Button variant="pixel" size="lg" className="font-game text-xl">
+              Back to course
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="border-t-4 h-screen w-full">
