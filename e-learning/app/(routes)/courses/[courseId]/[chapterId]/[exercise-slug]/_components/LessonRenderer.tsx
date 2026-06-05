@@ -170,7 +170,7 @@ function LessonRenderer({
   return (
     <div className="flex h-full flex-col md:flex-row">
       <div className="flex-1 min-h-[40vh] md:min-h-0 md:h-full">{mediaEl}</div>
-      <aside className="w-full md:w-96 p-6 md:border-l-4 md:border-t-0 border-t-4 border-zinc-800 bg-zinc-950 flex flex-col gap-4">
+      <aside className="w-full md:w-96 p-6 pb-24 md:pb-24 md:border-l-4 md:border-t-0 border-t-4 border-zinc-800 bg-zinc-950 flex flex-col gap-4 overflow-y-auto">
         <h2 className="font-game text-3xl text-white">{lesson.title}</h2>
         <p className="font-game text-zinc-400">
           {hasInVideoQuizzes
