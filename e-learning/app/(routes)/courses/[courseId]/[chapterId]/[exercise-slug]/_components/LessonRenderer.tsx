@@ -56,17 +56,34 @@ function LessonRenderer({
   const { refreshUserDetail } = useContext(UserDetailContext);
   const isMobile = useIsMobile();
 
+  const [marking, setMarking] = React.useState(false);
+
   const markCompleted = async () => {
-    if (!lesson) return;
+    if (!lesson || marking) return;
+    setMarking(true);
     try {
-      await axios.post("/api/lesson/complete", { lessonId: lesson.id });
-      toast.success("Lesson marked as completed!");
+      const res = await axios.post<{ xpEarned?: number; alreadyCompleted?: boolean }>(
+        "/api/lesson/complete",
+        { lessonId: lesson.id },
+      );
+      const earned = res.data?.xpEarned ?? lesson.xp ?? 0;
+      if (res.data?.alreadyCompleted) {
+        toast.success("Already completed.");
+      } else {
+        toast.success(
+          earned > 0
+            ? `Lesson complete! +${earned} XP`
+            : "Lesson marked as completed!",
+        );
+      }
       refreshData();
       await refreshUserDetail();
       router.refresh();
     } catch (err) {
       console.error(err);
       toast.error("Failed to mark lesson as completed");
+    } finally {
+      setMarking(false);
     }
   };
 
@@ -179,24 +196,34 @@ function LessonRenderer({
             ? "Watch the lecture, then mark this lesson complete to earn XP."
             : "Read through the document, then mark this lesson complete to earn XP."}
         </p>
+
         {/* Videos with checkpoints auto-complete on the last correct
-            answer; hide the Mark Completed button so the student isn't
-            tempted to skip the quizzes. */}
-        {!hasInVideoQuizzes && (
+            answer; show a finished-state pill instead of the manual
+            Mark Completed button so the student isn't tempted to skip
+            the quizzes. */}
+        {hasInVideoQuizzes ? (
+          isCompleted && (
+            <div className="font-game text-xl text-green-400 mt-auto">
+              Lesson completed.
+            </div>
+          )
+        ) : isCompleted ? (
+          <div className="mt-auto flex flex-col gap-2 p-4 border-2 border-green-500 rounded-xl bg-green-500/10">
+            <p className="font-game text-2xl text-green-300">Lesson completed</p>
+            <p className="font-game text-sm text-green-200/80">
+              +{lesson.xp} XP earned. Use Next to continue.
+            </p>
+          </div>
+        ) : (
           <Button
             variant="pixel"
             size="lg"
-            disabled={isCompleted}
+            disabled={marking}
             onClick={markCompleted}
             className="font-game text-xl md:mt-auto"
           >
-            {isCompleted ? "Already Completed" : `Mark Completed (+${lesson.xp} XP)`}
+            {marking ? "Saving…" : `Mark Completed (+${lesson.xp} XP)`}
           </Button>
-        )}
-        {hasInVideoQuizzes && isCompleted && (
-          <div className="font-game text-xl text-green-400 mt-auto">
-            Lesson completed.
-          </div>
         )}
       </aside>
     </div>

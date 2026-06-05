@@ -1,5 +1,6 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
+import { ExternalLink } from "lucide-react";
 import type { PdfLessonContent } from "@/config/schema";
 
 type Props = {
@@ -20,8 +21,30 @@ function extractGoogleDriveFileId(url: string): string | null {
   return null;
 }
 
+// Picks the most reliable embed URL for a given source. We deliberately
+// prefer a viewer that doesn't depend on the browser's native PDF
+// plugin (which is patchy on mobile and blocked by some hosts via
+// X-Frame-Options).
+//   • Google Drive → Drive's own /preview reader (best UX for Drive)
+//   • anything else → Google Docs viewer, which fetches the PDF server-
+//     side and renders an iframe-friendly reader. Works for any URL
+//     that is publicly fetchable.
+function pickEmbedUrl(rawUrl: string): { src: string; source: "drive" | "gview" } {
+  const driveId = extractGoogleDriveFileId(rawUrl);
+  if (driveId) {
+    return { src: `https://drive.google.com/file/d/${driveId}/preview`, source: "drive" };
+  }
+  return {
+    src: `https://docs.google.com/gview?url=${encodeURIComponent(rawUrl)}&embedded=true`,
+    source: "gview",
+  };
+}
+
 function PdfLesson({ content, title }: Props) {
   const url = content?.pdfUrl;
+  // Counter so the student can force a remount of the iframe if it
+  // appears to have failed (e.g. Drive showing a momentary error).
+  const [reloadKey, setReloadKey] = useState(0);
 
   if (!url) {
     return (
@@ -33,58 +56,42 @@ function PdfLesson({ content, title }: Props) {
     );
   }
 
-  // Google Drive: turn a /view share link into the iframe-friendly
-  // /preview URL. Requires the file's sharing to be "Anyone with the
-  // link can view" — otherwise the iframe shows Google's permission
-  // prompt instead of the document.
-  const driveId = extractGoogleDriveFileId(url);
-  if (driveId) {
-    const embedUrl = `https://drive.google.com/file/d/${driveId}/preview`;
-    return (
-      <div className="relative w-full h-full bg-zinc-800 flex flex-col">
-        <div className="flex items-center justify-end gap-3 px-3 py-1.5 bg-zinc-900/60 text-xs text-zinc-300">
+  const { src, source } = pickEmbedUrl(url);
+
+  return (
+    <div className="relative w-full h-full bg-zinc-900 flex flex-col">
+      <div className="flex items-center justify-between gap-3 px-3 py-2 bg-zinc-900/80 border-b border-zinc-800 text-xs text-zinc-300">
+        <span className="font-game uppercase tracking-wider text-zinc-500">
+          {source === "drive" ? "Google Drive viewer" : "PDF viewer"}
+        </span>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={() => setReloadKey((k) => k + 1)}
+            className="hover:text-yellow-300 underline"
+          >
+            Reload
+          </button>
           <a
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="hover:text-yellow-300 underline"
+            className="hover:text-yellow-300 underline inline-flex items-center gap-1"
           >
-            Open in Drive
+            Open in new tab
+            <ExternalLink className="w-3 h-3" />
           </a>
         </div>
-        <iframe
-          title={title}
-          src={embedUrl}
-          allow="autoplay"
-          className="w-full flex-1 min-h-0 bg-zinc-800"
-        />
       </div>
-    );
-  }
 
-  // Generic PDF URL: try a direct embed. When the browser / host blocks
-  // inline rendering, the <object> children become the fallback.
-  return (
-    <object
-      data={url}
-      type="application/pdf"
-      aria-label={title}
-      className="w-full h-full bg-zinc-800"
-    >
-      <div className="w-full h-full bg-zinc-800 flex flex-col items-center justify-center gap-4 p-8 text-center">
-        <p className="font-game text-zinc-300 text-xl">
-          This PDF couldn't be displayed inline.
-        </p>
-        <a
-          href={url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="font-game text-yellow-300 underline text-lg"
-        >
-          Open PDF in a new tab
-        </a>
-      </div>
-    </object>
+      <iframe
+        key={`${source}-${reloadKey}`}
+        title={title}
+        src={src}
+        allow="autoplay"
+        className="w-full flex-1 min-h-0 bg-zinc-900"
+      />
+    </div>
   );
 }
 
