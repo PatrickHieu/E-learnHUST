@@ -123,31 +123,44 @@ export default function EditLessonForm({ courseId, lesson }: Props) {
       {lesson.type === "pdf" && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Upload new PDF (optional)</label>
-            <input
-              ref={pdfInputRef}
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setPdfFileName(e.target.files?.[0]?.name ?? null)}
-              className="block w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-zinc-300 dark:file:border-zinc-700 file:bg-transparent file:text-sm hover:file:bg-zinc-100 dark:hover:file:bg-zinc-900"
+            <label className="text-sm font-medium">
+              PDF link (Google Drive recommended) *
+            </label>
+            <Input
+              name="pdfUrl"
+              required
+              defaultValue={v.pdfUrl ?? ""}
+              placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
             />
-            {pdfFileName ? (
-              <p className="text-xs text-zinc-500">Selected: {pdfFileName} — replaces the current PDF on save.</p>
-            ) : (
-              <p className="text-xs text-zinc-500">Leave blank to keep the existing PDF.</p>
-            )}
+            <p className="text-xs text-zinc-500">
+              Paste a Google Drive share link, or any public PDF URL. For Drive, set sharing to
+              {" "}
+              <span className="font-medium">&quot;Anyone with the link can view&quot;</span>
+              {" "}
+              so students can read it.
+            </p>
           </div>
 
           <details className="text-sm">
             <summary className="cursor-pointer text-zinc-500 hover:text-zinc-300 select-none">
-              Advanced: edit the PDF URL directly
+              Advanced: upload a new PDF file to Cloudinary instead
             </summary>
             <div className="flex flex-col gap-2 mt-3 pl-3 border-l-2 border-zinc-200 dark:border-zinc-800">
-              <label className="text-sm font-medium">PDF URL</label>
-              <Input name="pdfUrl" defaultValue={v.pdfUrl ?? ""} />
-              <p className="text-xs text-zinc-500">
-                Current stored URL. If you upload a new file above, that overrides this value on save.
-              </p>
+              <label className="text-sm font-medium">Upload new PDF</label>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setPdfFileName(e.target.files?.[0]?.name ?? null)}
+                className="block w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-zinc-300 dark:file:border-zinc-700 file:bg-transparent file:text-sm hover:file:bg-zinc-100 dark:hover:file:bg-zinc-900"
+              />
+              {pdfFileName ? (
+                <p className="text-xs text-zinc-500">Selected: {pdfFileName} — uploaded to Cloudinary on save, overrides the link above.</p>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Leave blank to keep the link above. Cloudinary&apos;s free tier requires the PDF/ZIP delivery toggle to be on — Drive is more reliable.
+                </p>
+              )}
             </div>
           </details>
         </div>

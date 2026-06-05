@@ -38,10 +38,10 @@ export default function LessonForm({ courseId, chapters }: Props) {
     const formData = new FormData(e.currentTarget);
 
     try {
-      // PDF lessons: upload is the primary path. If the admin picked a
-      // file we upload it to Cloudinary and put the resulting URL into
-      // pdfUrl. The optional URL input is only a fallback for cases
-      // where the PDF is already hosted elsewhere.
+      // PDF lessons: the recommended path is to paste a Google Drive
+      // share link (free, no Cloudinary delivery quirks). The admin can
+      // also upload a file directly — when both are provided, the
+      // uploaded file wins.
       if (type === "pdf") {
         const file = pdfInputRef.current?.files?.[0];
         const pastedUrl = (formData.get("pdfUrl") as string)?.trim() ?? "";
@@ -49,7 +49,7 @@ export default function LessonForm({ courseId, chapters }: Props) {
           const url = await uploadToCloudinary(file);
           formData.set("pdfUrl", url);
         } else if (!pastedUrl) {
-          setError("Please upload a PDF file (or paste a PDF URL under Advanced).");
+          setError("Paste a Google Drive share link, or upload a PDF file under Advanced.");
           setSubmitting(false);
           return;
         }
@@ -134,34 +134,42 @@ export default function LessonForm({ courseId, chapters }: Props) {
       {type === "pdf" && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Upload PDF file *</label>
-            <input
-              ref={pdfInputRef}
-              type="file"
-              accept="application/pdf"
-              onChange={(e) => setPdfFileName(e.target.files?.[0]?.name ?? null)}
-              className="block w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-zinc-300 dark:file:border-zinc-700 file:bg-transparent file:text-sm hover:file:bg-zinc-100 dark:hover:file:bg-zinc-900"
+            <label className="text-sm font-medium">
+              PDF link (Google Drive recommended) *
+            </label>
+            <Input
+              name="pdfUrl"
+              placeholder="https://drive.google.com/file/d/.../view?usp=sharing"
             />
-            {pdfFileName ? (
-              <p className="text-xs text-zinc-500">Selected: {pdfFileName} — uploads to Cloudinary on save.</p>
-            ) : (
-              <p className="text-xs text-zinc-500">PDF file is uploaded to Cloudinary on save.</p>
-            )}
+            <p className="text-xs text-zinc-500">
+              Paste a Google Drive share link, or any public PDF URL. For Drive, set sharing to
+              {" "}
+              <span className="font-medium">&quot;Anyone with the link can view&quot;</span>
+              {" "}
+              so students can read it.
+            </p>
           </div>
 
           <details className="text-sm">
             <summary className="cursor-pointer text-zinc-500 hover:text-zinc-300 select-none">
-              Advanced: use a PDF URL instead of uploading
+              Advanced: upload a PDF file to Cloudinary instead
             </summary>
             <div className="flex flex-col gap-2 mt-3 pl-3 border-l-2 border-zinc-200 dark:border-zinc-800">
-              <label className="text-sm font-medium">PDF URL (optional)</label>
-              <Input
-                name="pdfUrl"
-                placeholder="https://example.com/document.pdf"
+              <label className="text-sm font-medium">Upload PDF file</label>
+              <input
+                ref={pdfInputRef}
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setPdfFileName(e.target.files?.[0]?.name ?? null)}
+                className="block w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-zinc-300 dark:file:border-zinc-700 file:bg-transparent file:text-sm hover:file:bg-zinc-100 dark:hover:file:bg-zinc-900"
               />
-              <p className="text-xs text-zinc-500">
-                Only fill this if the PDF is already hosted somewhere public. Leave blank when you upload above.
-              </p>
+              {pdfFileName ? (
+                <p className="text-xs text-zinc-500">Selected: {pdfFileName} — uploaded to Cloudinary on save, overrides the link above.</p>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  Cloudinary&apos;s free tier requires the PDF/ZIP delivery toggle to be on — Drive is more reliable.
+                </p>
+              )}
             </div>
           </details>
         </div>
