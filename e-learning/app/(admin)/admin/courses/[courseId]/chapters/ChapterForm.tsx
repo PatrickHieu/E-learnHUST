@@ -35,11 +35,26 @@ export default function ChapterForm({ courseId, chapter }: Props) {
         setError(result.error);
       }
     } catch (err) {
+      // Next.js server-action redirect() throws a NEXT_REDIRECT error
+      // that the framework needs in order to perform the navigation.
+      // Swallowing it here surfaces a fake error toast and breaks the
+      // redirect. Re-throw and only treat real errors as failures.
+      if (isRedirectError(err)) throw err;
       console.error(err);
       setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSubmitting(false);
     }
+  }
+
+  function isRedirectError(err: unknown): boolean {
+    return (
+      typeof err === "object" &&
+      err !== null &&
+      "digest" in err &&
+      typeof (err as { digest?: unknown }).digest === "string" &&
+      (err as { digest: string }).digest.startsWith("NEXT_REDIRECT")
+    );
   }
 
   return (
