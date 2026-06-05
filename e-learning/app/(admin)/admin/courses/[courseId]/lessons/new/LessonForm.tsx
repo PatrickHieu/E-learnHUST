@@ -38,14 +38,20 @@ export default function LessonForm({ courseId, chapters }: Props) {
     const formData = new FormData(e.currentTarget);
 
     try {
-      // If the admin picked a PDF file, upload it to Cloudinary first and
-      // overwrite the pdfUrl field with the resulting URL before calling
-      // the server action.
+      // PDF lessons: upload is the primary path. If the admin picked a
+      // file we upload it to Cloudinary and put the resulting URL into
+      // pdfUrl. The optional URL input is only a fallback for cases
+      // where the PDF is already hosted elsewhere.
       if (type === "pdf") {
         const file = pdfInputRef.current?.files?.[0];
+        const pastedUrl = (formData.get("pdfUrl") as string)?.trim() ?? "";
         if (file && file.size > 0) {
           const url = await uploadToCloudinary(file);
           formData.set("pdfUrl", url);
+        } else if (!pastedUrl) {
+          setError("Please upload a PDF file (or paste a PDF URL under Advanced).");
+          setSubmitting(false);
+          return;
         }
       }
 
@@ -128,7 +134,7 @@ export default function LessonForm({ courseId, chapters }: Props) {
       {type === "pdf" && (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Upload PDF file</label>
+            <label className="text-sm font-medium">Upload PDF file *</label>
             <input
               ref={pdfInputRef}
               type="file"
@@ -136,24 +142,28 @@ export default function LessonForm({ courseId, chapters }: Props) {
               onChange={(e) => setPdfFileName(e.target.files?.[0]?.name ?? null)}
               className="block w-full text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border file:border-zinc-300 dark:file:border-zinc-700 file:bg-transparent file:text-sm hover:file:bg-zinc-100 dark:hover:file:bg-zinc-900"
             />
-            {pdfFileName && (
-              <p className="text-xs text-zinc-500">Selected: {pdfFileName}</p>
+            {pdfFileName ? (
+              <p className="text-xs text-zinc-500">Selected: {pdfFileName} — uploads to Cloudinary on save.</p>
+            ) : (
+              <p className="text-xs text-zinc-500">PDF file is uploaded to Cloudinary on save.</p>
             )}
           </div>
 
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">
-              {pdfFileName ? "PDF URL (will be filled after upload)" : "…or paste PDF URL *"}
-            </label>
-            <Input
-              name="pdfUrl"
-              required={!pdfFileName}
-              placeholder="https://res.cloudinary.com/.../document.pdf"
-            />
-            <p className="text-xs text-zinc-500">
-              Pick a file above to upload to Cloudinary on save, or paste a public URL directly.
-            </p>
-          </div>
+          <details className="text-sm">
+            <summary className="cursor-pointer text-zinc-500 hover:text-zinc-300 select-none">
+              Advanced: use a PDF URL instead of uploading
+            </summary>
+            <div className="flex flex-col gap-2 mt-3 pl-3 border-l-2 border-zinc-200 dark:border-zinc-800">
+              <label className="text-sm font-medium">PDF URL (optional)</label>
+              <Input
+                name="pdfUrl"
+                placeholder="https://example.com/document.pdf"
+              />
+              <p className="text-xs text-zinc-500">
+                Only fill this if the PDF is already hosted somewhere public. Leave blank when you upload above.
+              </p>
+            </div>
+          </details>
         </div>
       )}
 
