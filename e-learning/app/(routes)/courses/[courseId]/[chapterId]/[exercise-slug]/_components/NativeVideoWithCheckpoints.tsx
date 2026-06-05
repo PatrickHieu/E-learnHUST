@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import type { VideoQuizCheckpoint } from "@/config/schema";
 import { sanitizeLessonHtml } from "@/lib/sanitize";
+import CheckpointMarkers from "./CheckpointMarkers";
 
 type Props = {
   url: string;
@@ -47,6 +48,7 @@ function NativeVideoWithCheckpoints({
   const [selected, setSelected] = useState<number | null>(null);
   const [wrongPick, setWrongPick] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [duration, setDuration] = useState(0);
 
   // timeupdate fires ~4 times/sec on most browsers — cheap enough to scan
   // the small checkpoint array each time.
@@ -112,22 +114,33 @@ function NativeVideoWithCheckpoints({
   const remaining = ordered.length - completed.size;
 
   return (
-    <div className="relative w-full h-full bg-black">
-      <video
-        ref={videoRef}
-        controls
-        className="w-full h-full bg-black"
-        src={url}
-        aria-label={title}
-        onTimeUpdate={handleTimeUpdate}
-      />
+    <div className="relative w-full h-full bg-black flex flex-col">
+      <div className="relative flex-1 min-h-0 bg-black">
+        <video
+          ref={videoRef}
+          controls
+          className="w-full h-full bg-black"
+          src={url}
+          aria-label={title}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={() =>
+            setDuration(videoRef.current?.duration ?? 0)
+          }
+        />
 
-      {/* Small progress chip top-right so the student sees the gates ahead */}
-      {ordered.length > 0 && !activeCheckpoint && (
-        <div className="pointer-events-none absolute top-3 right-3 px-3 py-1 rounded-full bg-black/70 text-white font-game text-sm">
-          {completed.size}/{ordered.length} quizzes
-        </div>
-      )}
+        {/* Small progress chip top-right so the student sees the gates ahead */}
+        {ordered.length > 0 && !activeCheckpoint && (
+          <div className="pointer-events-none absolute top-3 right-3 px-3 py-1 rounded-full bg-black/70 text-white font-game text-sm">
+            {completed.size}/{ordered.length} quizzes
+          </div>
+        )}
+      </div>
+
+      <CheckpointMarkers
+        durationSec={duration}
+        checkpoints={ordered}
+        completedIndexes={completed}
+      />
 
       {activeCheckpoint && (
         <div className="absolute inset-0 bg-black/85 flex items-center justify-center p-4 md:p-10">
