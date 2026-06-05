@@ -3,6 +3,7 @@ import React, { useRef, useState } from "react";
 import { toast } from "sonner";
 import type { VideoQuizCheckpoint } from "@/config/schema";
 import CheckpointOverlay, { CheckpointWithIndex } from "./CheckpointOverlay";
+import CheckpointMarkers from "./CheckpointMarkers";
 
 type Props = {
   url: string;
@@ -35,6 +36,7 @@ function NativeVideoWithCheckpoints({
     () => new Set(initiallyCompletedIndexes),
   );
   const [activeCheckpoint, setActiveCheckpoint] = useState<CheckpointWithIndex | null>(null);
+  const [duration, setDuration] = useState(0);
 
   function handleTimeUpdate() {
     const v = videoRef.current;
@@ -50,21 +52,32 @@ function NativeVideoWithCheckpoints({
   }
 
   return (
-    <div className="relative w-full h-full bg-black">
-      <video
-        ref={videoRef}
-        controls
-        className="w-full h-full bg-black"
-        src={url}
-        aria-label={title}
-        onTimeUpdate={handleTimeUpdate}
-      />
+    <div className="relative w-full h-full bg-black flex flex-col">
+      <div className="relative flex-1 min-h-0 bg-black">
+        <video
+          ref={videoRef}
+          controls
+          className="w-full h-full bg-black"
+          src={url}
+          aria-label={title}
+          onTimeUpdate={handleTimeUpdate}
+          onLoadedMetadata={() =>
+            setDuration(videoRef.current?.duration ?? 0)
+          }
+        />
 
-      {ordered.length > 0 && !activeCheckpoint && (
-        <div className="pointer-events-none absolute top-3 right-3 px-3 py-1 rounded-full bg-black/70 text-white font-game text-sm">
-          {completed.size}/{ordered.length} quizzes
-        </div>
-      )}
+        {ordered.length > 0 && !activeCheckpoint && (
+          <div className="pointer-events-none absolute top-3 right-3 px-3 py-1 rounded-full bg-black/70 text-white font-game text-sm">
+            {completed.size}/{ordered.length} quizzes
+          </div>
+        )}
+      </div>
+
+      <CheckpointMarkers
+        durationSec={duration}
+        checkpoints={ordered}
+        completedIndexes={completed}
+      />
 
       {activeCheckpoint && (
         <CheckpointOverlay
