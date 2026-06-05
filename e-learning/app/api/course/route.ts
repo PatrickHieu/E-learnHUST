@@ -20,6 +20,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
+import { isLessonGating } from "@/lib/chapter-gating";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -57,7 +58,7 @@ export async function GET(req: NextRequest) {
       .where(eq(CourseChapterTable.courseId, courseIdNum))
       .orderBy(asc(CourseChapterTable.chapterId));
 
-    const lessonRows = await db
+    const lessonRowsRaw = await db
       .select({
         id: LessonsTable.id,
         courseId: LessonsTable.courseId,
@@ -67,10 +68,21 @@ export async function GET(req: NextRequest) {
         type: LessonsTable.type,
         title: LessonsTable.title,
         xp: LessonsTable.xp,
+        // Pulled so we can compute the gating flag below; stripped from
+        // the response so the chapter listing payload stays small.
+        content: LessonsTable.content,
       })
       .from(LessonsTable)
       .where(eq(LessonsTable.courseId, courseIdNum))
       .orderBy(asc(LessonsTable.chapterId), asc(LessonsTable.orderIndex));
+
+    // `gating: boolean` — true for the lessons that block the next chapter
+    // (standalone quiz / exercise / video with checkpoints). See
+    // lib/chapter-gating.ts for the rule.
+    const lessonRows = lessonRowsRaw.map(({ content, ...rest }) => ({
+      ...rest,
+      gating: isLessonGating({ type: rest.type, content }),
+    }));
 
     const enrolledCourse = await db
       .select()

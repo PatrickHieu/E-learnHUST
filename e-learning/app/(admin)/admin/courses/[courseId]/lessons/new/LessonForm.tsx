@@ -7,6 +7,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { createLessonAction } from "../../actions";
+import CheckpointsEditor from "../CheckpointsEditor";
+import type { VideoQuizCheckpoint } from "@/config/schema";
 
 type ChapterOption = { id: number; chapterId: number | null; name: string | null };
 
@@ -25,6 +27,7 @@ export default function LessonForm({ courseId, chapters }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [checkpoints, setCheckpoints] = useState<VideoQuizCheckpoint[]>([]);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -99,18 +102,25 @@ export default function LessonForm({ courseId, chapters }: Props) {
       </div>
 
       {type === "video" && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          <div className="flex flex-col gap-2">
-            <label className="text-sm font-medium">Provider</label>
-            <select name="provider" defaultValue="youtube" className={SELECT_STYLE}>
-              <option value="youtube">YouTube</option>
-              <option value="vimeo">Vimeo</option>
-              <option value="native">Direct URL (.mp4 etc.)</option>
-            </select>
+        <div className="flex flex-col gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div className="flex flex-col gap-2">
+              <label className="text-sm font-medium">Provider</label>
+              <select name="provider" defaultValue="youtube" className={SELECT_STYLE}>
+                <option value="youtube">YouTube</option>
+                <option value="vimeo">Vimeo</option>
+                <option value="native">Direct URL (.mp4 etc.)</option>
+              </select>
+            </div>
+            <div className="md:col-span-2 flex flex-col gap-2">
+              <label className="text-sm font-medium">Video URL *</label>
+              <Input name="url" required placeholder="https://www.youtube.com/watch?v=…" />
+            </div>
           </div>
-          <div className="md:col-span-2 flex flex-col gap-2">
-            <label className="text-sm font-medium">Video URL *</label>
-            <Input name="url" required placeholder="https://www.youtube.com/watch?v=…" />
+
+          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5">
+            <CheckpointsEditor checkpoints={checkpoints} onChange={setCheckpoints} />
+            <input type="hidden" name="inVideoQuizzes" value={JSON.stringify(checkpoints)} />
           </div>
         </div>
       )}

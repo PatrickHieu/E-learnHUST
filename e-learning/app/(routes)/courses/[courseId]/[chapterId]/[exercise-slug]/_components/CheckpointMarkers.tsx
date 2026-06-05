@@ -1,9 +1,7 @@
 "use client";
 import React from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import type { VideoQuizCheckpoint } from "@/config/schema";
-
-export type CheckpointWithIndex = VideoQuizCheckpoint & { originalIndex: number };
+import type { CheckpointWithIndex } from "./CheckpointOverlay";
 
 type Props = {
   durationSec: number;            // 0 while metadata is still loading
