@@ -115,7 +115,7 @@ export async function downloadCertificatePdf(
   doc.setFont(fontFamily, "normal");
   doc.setFontSize(16);
   doc.setTextColor(80, 80, 80);
-  doc.text("Chứng nhận này được trao cho", pageWidth / 2, 80, {
+  doc.text("This certificate is proudly presented to", pageWidth / 2, 80, {
     align: "center",
   });
 
@@ -143,7 +143,7 @@ export async function downloadCertificatePdf(
   doc.setFontSize(14);
   doc.setTextColor(80, 80, 80);
   doc.text(
-    "đã hoàn thành xuất sắc khóa học · for successfully completing the course",
+    "for successfully completing the course",
     pageWidth / 2,
     125,
     { align: "center" },
@@ -173,7 +173,7 @@ export async function downloadCertificatePdf(
   doc.setFont(fontFamily, "normal");
   doc.setFontSize(11);
   doc.setTextColor(100, 100, 100);
-  doc.text("Ngày cấp · Issued on", 70, footerY + 6, { align: "center" });
+  doc.text("Date Issued", 70, footerY + 6, { align: "center" });
   doc.setFont(fontFamily, "bold");
   doc.setFontSize(13);
   doc.setTextColor(40, 40, 40);
@@ -182,7 +182,7 @@ export async function downloadCertificatePdf(
   doc.setFont(fontFamily, "normal");
   doc.setFontSize(11);
   doc.setTextColor(100, 100, 100);
-  doc.text("Nơi cấp · Issued by", pageWidth - 70, footerY + 6, {
+  doc.text("Issued by", pageWidth - 70, footerY + 6, {
     align: "center",
   });
   doc.setFont(fontFamily, "bold");
