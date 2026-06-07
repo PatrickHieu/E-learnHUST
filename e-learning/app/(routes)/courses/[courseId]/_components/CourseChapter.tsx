@@ -2,9 +2,13 @@ import React from 'react'
 import { Course } from '../../_components/CourseList'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Button } from '@/components/ui/button'
-import { useAuth } from '@clerk/nextjs'
 import { Video, FileText, Code2, HelpCircle, Lock } from 'lucide-react'
 import { isChapterUnlocked } from '@/lib/chapter-gating'
+
+// Clerk billing supplied the pro-plan flag; until a replacement
+// subscription system lands, every learner is treated as a free
+// user. Chapters 3+ stay Pro-locked the same way they did before.
+const hasProAccess = false;
 
 import {
   Accordion,
@@ -33,9 +37,7 @@ function lessonIcon(type: string) {
 }
 
 function CourseChapter({ loading, courseDetail }: Props) {
-
-  const { has } = useAuth();
-  const hasProAccess = has && has({ plan: 'pro' });
+  void loading;
   const completedIds = courseDetail?.completedLessonIds ?? [];
 
   return (

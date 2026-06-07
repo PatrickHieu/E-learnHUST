@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/config/db";
 import {
@@ -20,8 +20,8 @@ import {
 const ACCEPTED_METHODS = new Set(["vnpay", "momo", "card"] as const);
 
 export async function POST(req: NextRequest) {
-  const user = await currentUser();
-  const userId = user?.id;
+  const session = await auth();
+  const userId = session?.user?.id;
   if (!userId) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }

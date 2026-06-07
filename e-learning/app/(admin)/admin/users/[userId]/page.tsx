@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { and, asc, desc, eq, inArray, or } from "drizzle-orm";
-import { clerkClient } from "@clerk/nextjs/server";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { db } from "@/config/db";
 import {
   CompletedLessonTable,
@@ -59,7 +58,7 @@ export default async function AdminUserDetailPage({
     notFound();
   }
 
-  // ---- The user row + Clerk metadata for role display ----
+  // ---- The user row ----
   const [user] = await db
     .select()
     .from(usersTable)
@@ -69,22 +68,15 @@ export default async function AdminUserDetailPage({
     notFound();
   }
 
-  const client = await clerkClient();
-  const clerkList = await client.users.getUserList({ limit: 500 });
-  const clerkRow = clerkList.data.find(
-    (cu) => cu.primaryEmailAddress?.emailAddress === user.email,
-  );
-  const role =
-    (clerkRow?.publicMetadata as { role?: string } | undefined)?.role ??
-    "student";
+  const role = user.role ?? "student";
 
-  // Activity rows reference users by varchar userId. Real Clerk users
-  // land as `user_xxx`; the fake-users seed writes `seed_<emailLocal>`.
-  // Look up both so admins can inspect either kind of account.
+  // Activity rows reference users by varchar userId. Post-migration
+  // new sessions write String(users.id); pre-migration the
+  // fake-users seed wrote `seed_<emailLocal>`. Look up both so
+  // existing seed data still surfaces from the same /admin/users
+  // entry point.
   const seedUserId = `seed_${user.email.split("@")[0]}`;
-  const candidateUserIds = clerkRow
-    ? [clerkRow.id, seedUserId]
-    : [seedUserId];
+  const candidateUserIds = [String(user.id), seedUserId];
 
   // ---- Enrolments + per-course progress ----
   const enrollments = await db
@@ -259,9 +251,9 @@ export default async function AdminUserDetailPage({
         <Badge variant={user.subscription ? "default" : "outline"}>
           {user.subscription || "FREE"}
         </Badge>
-        {!clerkRow && (
+        {!user.passwordHash && (
           <span className="text-xs text-zinc-500 ml-auto">
-            No Clerk account — likely a seeded fake user.
+            No password set — likely a seeded fake user.
           </span>
         )}
       </Card>

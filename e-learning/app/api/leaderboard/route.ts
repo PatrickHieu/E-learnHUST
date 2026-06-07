@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { desc, asc } from "drizzle-orm";
 import { db } from "@/config/db";
 import { usersTable } from "@/config/schema";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 
 const LEADERBOARD_LIMIT = 100;
 
 export async function GET(_req: NextRequest) {
-  const user = await currentUser();
-  if (!user?.id) {
+  const session = await auth();
+  if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
   }
 
@@ -25,6 +25,6 @@ export async function GET(_req: NextRequest) {
 
   return NextResponse.json({
     leaders: rows,
-    currentUserEmail: user.primaryEmailAddress?.emailAddress ?? null,
+    currentUserEmail: session.user.email ?? null,
   });
 }

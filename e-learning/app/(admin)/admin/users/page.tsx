@@ -1,5 +1,4 @@
 import { redirect } from "next/navigation";
-import { clerkClient } from "@clerk/nextjs/server";
 import { checkRole } from "@/lib/checkRole";
 import { db } from "@/config/db";
 import { usersTable } from "@/config/schema";
@@ -11,31 +10,18 @@ export default async function AdminUsersPage() {
         redirect("/admin");
     }
 
+    // Role lives on usersTable.role since the Auth.js migration —
+    // no second-system join needed any more.
     const users = await db.select().from(usersTable);
 
-    // Join local users with Clerk to surface each user's current role and
-    // the clerkUserId needed by the role-change action.
-    const client = await clerkClient();
-    const clerkList = await client.users.getUserList({ limit: 500 });
-    const clerkByEmail = new Map<string, { id: string; role: string }>();
-    for (const cu of clerkList.data) {
-        const email = cu.primaryEmailAddress?.emailAddress;
-        const role = (cu.publicMetadata as { role?: string })?.role ?? "student";
-        if (email) clerkByEmail.set(email, { id: cu.id, role });
-    }
-
-    const rows: UserRow[] = users.map((u) => {
-        const clerk = clerkByEmail.get(u.email);
-        return {
-            id: u.id,
-            name: u.name,
-            email: u.email,
-            points: u.points,
-            subscription: u.subscription,
-            clerkId: clerk?.id ?? null,
-            role: clerk?.role ?? "student",
-        };
-    });
+    const rows: UserRow[] = users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        points: u.points,
+        subscription: u.subscription,
+        role: u.role ?? "student",
+    }));
 
     return (
         <div className="flex flex-col gap-6 font-sans">

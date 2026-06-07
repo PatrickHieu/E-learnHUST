@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { setUserRoleAction } from "./actions";
 
 type Props = {
-  clerkUserId: string;
+  userId: string;
   currentRole: string | undefined;
 };
 
-export default function RoleToggleButton({ clerkUserId, currentRole }: Props) {
+export default function RoleToggleButton({ userId, currentRole }: Props) {
   if (currentRole === "admin") {
     return (
       <span className="text-xs text-zinc-500">
@@ -21,7 +21,7 @@ export default function RoleToggleButton({ clerkUserId, currentRole }: Props) {
   const nextRole = isLibrarian ? "student" : "librarian";
 
   return (
-    <form action={setUserRoleAction.bind(null, clerkUserId, nextRole)}>
+    <form action={setUserRoleAction.bind(null, userId, nextRole)}>
       <Button
         type="submit"
         variant={isLibrarian ? "outline" : "default"}

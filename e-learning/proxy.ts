@@ -1,44 +1,45 @@
-import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 
-const isPublicRoute = createRouteMatcher([
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/'
-])
+// Auth.js middleware. Mirrors the original Clerk gates:
+// - sign-in / sign-up / "/" are public
+// - /admin/* requires admin or librarian role
+// - /admin/users/* requires admin specifically
+// - everything else needs a session
+//
+// JWT session means this runs without a DB call — the role lands on
+// the cookie at sign-in time and is read straight off the token here.
+const PUBLIC_PATHS = [/^\/sign-in/, /^\/sign-up/, /^\/$/];
 
-const isAdminRoute = createRouteMatcher(['/admin(.*)'])
-// Sub-area of /admin reserved for the admin role only — user management,
-// role assignment. Librarians are blocked here even though they have
-// general /admin access.
-const isAdminOnlyRoute = createRouteMatcher(['/admin/users(.*)'])
+export default async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+  const isPublic = PUBLIC_PATHS.some((re) => re.test(pathname));
+  if (isPublic) return NextResponse.next();
 
-export default clerkMiddleware(async (auth, req) => {
-  if (isPublicRoute(req)) {
-    return NextResponse.next();
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.redirect(new URL("/sign-in", req.url));
   }
-  if (isAdminRoute(req)) {
-    const { sessionClaims } = await auth();
-    const role = sessionClaims?.metadata?.role;
 
-    if (isAdminOnlyRoute(req)) {
-      if (role !== 'admin') {
-        const url = new URL('/', req.url);
-        return NextResponse.redirect(url);
+  if (pathname.startsWith("/admin")) {
+    const role = session.user.role;
+    if (pathname.startsWith("/admin/users")) {
+      if (role !== "admin") {
+        return NextResponse.redirect(new URL("/", req.url));
       }
-    } else if (role !== 'admin' && role !== 'librarian') {
-      const url = new URL('/', req.url);
-      return NextResponse.redirect(url);
+    } else if (role !== "admin" && role !== "librarian") {
+      return NextResponse.redirect(new URL("/", req.url));
     }
   }
-  await auth.protect();
-})
+
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
-    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
-    // Always run for API routes
-    '/(api|trpc)(.*)',
+    // Skip Next.js internals and static files, but run on everything
+    // else including API routes.
+    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    "/(api|trpc)(.*)",
   ],
-}
+};

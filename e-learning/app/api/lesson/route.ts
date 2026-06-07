@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { and, asc, eq } from "drizzle-orm";
 import { db } from "@/config/db";
@@ -14,8 +14,8 @@ import { isChapterUnlocked, isLessonGating } from "@/lib/chapter-gating";
 // Returns a single lesson plus sibling-lesson navigation metadata for the
 // student playground.
 export async function POST(req: NextRequest) {
-  const user = await currentUser();
-  const userId = user?.id;
+  const session = await auth();
+  const userId = session?.user?.id;
 
   if (!userId) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });

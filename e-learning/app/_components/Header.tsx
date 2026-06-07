@@ -4,8 +4,9 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { Shield } from "lucide-react";
+import UserAvatar from "./UserAvatar";
 
 import {
   NavigationMenu,
@@ -16,14 +17,13 @@ import {
 } from "@/components/ui/navigation-menu";
 
 function Header() {
-  const { user } = useUser();
+  const { data: session } = useSession();
   const params = useParams();
 
-  // Clerk stores the role on publicMetadata.role — same field
-  // checkRole() consults server-side. Show a fast-path button to /admin
-  // for anyone holding it, with a label that matches the role so a
-  // librarian doesn't think they're an admin.
-  const role = (user?.publicMetadata as { role?: string } | undefined)?.role;
+  // Role read straight off the Auth.js session token, same field
+  // checkRole() consults server-side. Staff get a Shield-iconed
+  // shortcut to /admin alongside their normal Dashboard link.
+  const role = session?.user?.role;
   const isStaff = role === "admin" || role === "librarian";
   const staffLabel = role === "admin" ? "Admin" : "Librarian";
 
@@ -68,10 +68,10 @@ function Header() {
       )}
 
       {/* Authentication Buttons Area */}
-      {!user ? (
+      {!session?.user ? (
         <Link href="/sign-in">
           <Button className="font-game text-xl" variant={"pixel"}>
-            Signup
+            Sign in
           </Button>
         </Link>
       ) : (
@@ -92,7 +92,7 @@ function Header() {
               Dashboard
             </Button>
           </Link>
-          <UserButton afterSignOutUrl="/" />
+          <UserAvatar />
         </div>
       )}
     </div>

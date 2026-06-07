@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { checkRole, hasAdminAccess } from "@/lib/checkRole";
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
 import { LayoutDashboard, BookOpen, Users, ArrowLeft, LineChart } from "lucide-react";
+import UserAvatar from "@/app/_components/UserAvatar";
 
 export default async function AdminLayout({
     children,
@@ -69,7 +69,7 @@ export default async function AdminLayout({
                         Back to User Mode
                     </Link>
                     <div className="flex items-center gap-3 px-3">
-                        <UserButton afterSignOutUrl="/" />
+                        <UserAvatar />
                         <span className="text-xs text-zinc-500">
                             {isAdmin ? "Admin" : "Librarian"}
                         </span>

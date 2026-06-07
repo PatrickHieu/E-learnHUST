@@ -5,6 +5,13 @@ export const usersTable = pgTable("users", {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     name: varchar({ length: 255 }).notNull(),
     email: varchar({ length: 255 }).notNull().unique(),
+    // bcrypt hash of the user's password. Nullable so existing pre-Auth.js
+    // rows (and any future OAuth-only flows) can sit without one — the
+    // sign-in endpoint refuses to authenticate any row where this is NULL.
+    passwordHash: varchar({ length: 255 }),
+    // 'student' | 'librarian' | 'admin'. Replaces Clerk publicMetadata.role
+    // as the single source of truth for access gates.
+    role: varchar({ length: 16 }).default("student").notNull(),
     points: integer().default(0),
     subscription: varchar()
 });

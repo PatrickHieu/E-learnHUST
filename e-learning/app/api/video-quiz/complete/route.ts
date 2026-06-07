@@ -1,4 +1,4 @@
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { NextRequest, NextResponse } from "next/server";
 import { and, count, eq, sql } from "drizzle-orm";
 import { db } from "@/config/db";
@@ -19,9 +19,9 @@ import { validateQuizSubmission } from "@/lib/lesson-validation";
 // also marked complete (a row lands in completedLesson) so the existing
 // progress UI doesn't need to special-case videos with checkpoints.
 export async function POST(req: NextRequest) {
-  const user = await currentUser();
-  const userId = user?.id;
-  const userEmail = user?.primaryEmailAddress?.emailAddress;
+  const session = await auth();
+  const userId = session?.user?.id;
+  const userEmail = session?.user?.email;
 
   if (!userId || !userEmail) {
     return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });

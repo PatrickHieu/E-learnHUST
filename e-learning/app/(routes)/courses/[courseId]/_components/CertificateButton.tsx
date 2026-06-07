@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { useUser } from "@clerk/nextjs";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Award, Loader2 } from "lucide-react";
@@ -12,14 +12,14 @@ type Props = {
 };
 
 function CertificateButton({ courseTitle }: Props) {
-  const { user } = useUser();
+  const { data: session } = useSession();
   const [generating, setGenerating] = useState(false);
 
   const handleClick = async () => {
     if (generating) return;
     const name =
-      user?.fullName ||
-      user?.primaryEmailAddress?.emailAddress ||
+      session?.user?.name ||
+      session?.user?.email ||
       "Anonymous Learner";
     setGenerating(true);
     try {
