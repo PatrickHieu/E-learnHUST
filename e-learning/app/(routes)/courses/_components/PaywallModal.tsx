@@ -2,6 +2,7 @@
 
 import React, { useContext, useState } from "react";
 import axios from "axios";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import Image from "next/image";
@@ -156,6 +157,7 @@ function PaywallModal({ course, open, onClose }: Props) {
               canAfford={canAfford}
               submitting={submitting}
               onConfirm={handleUnlockWithStars}
+              onClose={onClose}
             />
           ) : (
             <PaidCheckoutBody
@@ -178,12 +180,14 @@ function StarUnlockBody({
   canAfford,
   submitting,
   onConfirm,
+  onClose,
 }: {
   balance: number;
   cost: number;
   canAfford: boolean;
   submitting: boolean;
   onConfirm: () => void;
+  onClose: () => void;
 }) {
   const remaining = balance - cost;
 
@@ -222,12 +226,13 @@ function StarUnlockBody({
         <div className="p-3 rounded-md border border-red-500/40 bg-red-500/10 text-sm font-game text-red-200">
           Bạn cần thêm {(cost - balance).toLocaleString("vi-VN")} ⭐ để mở khóa khóa học này.
           {" "}
-          <a
+          <Link
             href="/courses?level=beginner"
+            onClick={onClose}
             className="underline text-yellow-300 ml-1"
           >
             Học các khóa miễn phí để kiếm thêm sao →
-          </a>
+          </Link>
         </div>
       )}
 

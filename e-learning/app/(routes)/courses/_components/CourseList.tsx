@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { ChartNoAxesColumnIncreasingIcon, Lock, Search, Star, X } from 'lucide-react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import PaywallModal from './PaywallModal'
 import { formatVnd } from '@/lib/course-access'
 
@@ -76,12 +77,29 @@ const LEVELS = [
 
 function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }: Props) {
 
+    const searchParams = useSearchParams();
     const [coursesList, setCoursesList] = useState<Course[]>([]);
     const [loading, setLoading] = useState(false);
     const [q, setQ] = useState('');
-    const [level, setLevel] = useState<string | null>(null);
+    // Initialize from ?level= so deep links like /courses?level=beginner
+    // (used by the paywall's "earn more stars" CTA) land with the right
+    // filter already applied.
+    const [level, setLevel] = useState<string | null>(
+        searchParams.get('level'),
+    );
     const [paywallCourse, setPaywallCourse] = useState<Course | null>(null);
     const isInitialMount = useRef(true);
+
+    // Keep the local filter state in sync when the URL changes from the
+    // outside — e.g., the paywall modal pushes /courses?level=beginner
+    // while CourseList is already mounted, so a remount won't fire.
+    useEffect(() => {
+        const urlLevel = searchParams.get('level');
+        if (urlLevel !== level) {
+            setLevel(urlLevel);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [searchParams]);
 
     const fetchCourses = async () => {
         setLoading(true);
