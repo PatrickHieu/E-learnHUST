@@ -3,13 +3,25 @@ import { auth } from "@/auth";
 
 // Auth.js middleware. Mirrors the original Clerk gates:
 // - sign-in / sign-up / "/" are public
+// - /api/auth/* MUST be public — that's where the credentials POST,
+//   session refresh, CSRF, and sign-out endpoints live. Without this
+//   the middleware redirects the sign-in form's own POST to /sign-in
+//   (HTML), the fetch client gets HTML back instead of JSON, and
+//   sign-in silently fails with no error in the browser.
+// - /api/auth/register (custom sign-up endpoint) is reached by users
+//   who aren't logged in yet, so it's public for the same reason.
 // - /admin/* requires admin or librarian role
 // - /admin/users/* requires admin specifically
 // - everything else needs a session
 //
 // JWT session means this runs without a DB call — the role lands on
 // the cookie at sign-in time and is read straight off the token here.
-const PUBLIC_PATHS = [/^\/sign-in/, /^\/sign-up/, /^\/$/];
+const PUBLIC_PATHS = [
+  /^\/sign-in/,
+  /^\/sign-up/,
+  /^\/api\/auth\//,
+  /^\/$/,
+];
 
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
