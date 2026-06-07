@@ -76,20 +76,15 @@ function Header() {
         </Link>
       ) : (
         <div className="flex gap-4 items-center">
-          {isStaff && (
-            <Link href="/admin">
-              <Button
-                className="font-game text-xl gap-2 bg-yellow-400 text-black hover:bg-yellow-300 border-2 border-yellow-500"
-                variant={"pixel"}
-              >
-                <Shield className="w-5 h-5" />
-                {staffLabel}
-              </Button>
-            </Link>
-          )}
-          <Link href="/dashboard">
-            <Button className="font-game text-xl" variant={"pixel"}>
-              Dashboard
+          {/* Staff users see one Dashboard button that takes them
+              straight to /admin (their workspace). The label tracks
+              the role so a librarian doesn't think they're an admin.
+              They can still reach the student dashboard via /dashboard
+              directly if they need to. */}
+          <Link href={isStaff ? "/admin" : "/dashboard"}>
+            <Button className="font-game text-xl gap-2" variant={"pixel"}>
+              {isStaff && <Shield className="w-5 h-5" />}
+              {isStaff ? `${staffLabel} Dashboard` : "Dashboard"}
             </Button>
           </Link>
           <UserButton afterSignOutUrl="/" />
