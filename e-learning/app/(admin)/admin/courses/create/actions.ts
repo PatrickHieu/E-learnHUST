@@ -18,7 +18,12 @@ export async function createCourseAction(formData: FormData) {
   const level = formData.get("level") as string;
   const tags = formData.get("tags") as string;
   const editorType = formData.get("editorType") as string;
+  // unlockCost (stars) only applies to intermediate; priceVnd only to
+  // advanced. 0 in either column means "fall back to the auto value"
+  // — see lib/course-access — so admins can leave the field at 0 and
+  // still get a sensible default at display time.
   const unlockCost = Number(formData.get("unlockCost") || 0);
+  const priceVnd = Number(formData.get("priceVnd") || 0);
 
   // Monotonic courseId: MAX(courseId) + 1. The previous Math.random() approach
   // would eventually collide with the UNIQUE constraint.
@@ -36,6 +41,7 @@ export async function createCourseAction(formData: FormData) {
     tags,
     editorType,
     unlockCost,
+    priceVnd,
   });
 
   revalidatePath("/admin/courses");

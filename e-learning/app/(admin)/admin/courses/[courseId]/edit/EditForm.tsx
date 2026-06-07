@@ -15,6 +15,10 @@ export default function EditForm({ course }: { course: any }) {
     const router = useRouter();
     const [imagePreview, setImagePreview] = useState<string | null>(course.bannerImage);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    // Drives the pricing-row UI: intermediate → star cost, advanced → VND.
+    const [level, setLevel] = useState<"beginner" | "intermediate" | "advanced">(
+        (course.level as "beginner" | "intermediate" | "advanced") ?? "beginner",
+    );
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
@@ -65,15 +69,9 @@ export default function EditForm({ course }: { course: any }) {
         <Card>
             <CardContent className="pt-6">
                 <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <div className="flex flex-col gap-2">
-                            <label className="text-sm font-medium">Course Name *</label>
-                            <Input name="title" defaultValue={course.title} required />
-                        </div>
-                        <div className="flex flex-col gap-2">
-                            <label className="text-sm font-medium">Unlock Cost (⭐)</label>
-                            <Input name="unlockCost" type="number" min="0" defaultValue={course.unlockCost} />
-                        </div>
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium">Course Name *</label>
+                        <Input name="title" defaultValue={course.title} required />
                     </div>
 
                     <div className="flex flex-col gap-2">
@@ -101,12 +99,13 @@ export default function EditForm({ course }: { course: any }) {
                             <label className="text-sm font-medium">Difficulty</label>
                             <select
                                 name="level"
-                                defaultValue={course.level}
+                                value={level}
+                                onChange={(e) => setLevel(e.target.value as typeof level)}
                                 className="flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
                             >
-                                <option value="beginner">Beginner</option>
-                                <option value="intermediate">Intermediate</option>
-                                <option value="advanced">Advanced</option>
+                                <option value="beginner">Beginner (free)</option>
+                                <option value="intermediate">Intermediate (stars)</option>
+                                <option value="advanced">Advanced (paid)</option>
                             </select>
                         </div>
                         <div className="flex flex-col gap-2">
@@ -124,6 +123,52 @@ export default function EditForm({ course }: { course: any }) {
                         <div className="flex flex-col gap-2">
                             <label className="text-sm font-medium">Tags</label>
                             <Input name="tags" defaultValue={course.tags} />
+                        </div>
+                    </div>
+
+                    {/* Pricing block, driven by the Difficulty select above.
+                        Both inputs always render so the FormData carries
+                        zero values for the inapplicable field — server
+                        ignores them via the access-tier check. */}
+                    <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5 flex flex-col gap-3">
+                        <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-medium">Access pricing</h3>
+                            <span className="text-xs text-zinc-500">
+                                {level === "beginner" && "Free — anyone can enrol."}
+                                {level === "intermediate" && "Star-unlock — learners spend their accumulated XP."}
+                                {level === "advanced" && "Paid — learners go through the mock checkout."}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <div className={`flex flex-col gap-2 ${level !== "intermediate" ? "opacity-40" : ""}`}>
+                                <label className="text-sm font-medium">Star unlock cost (⭐)</label>
+                                <Input
+                                    name="unlockCost"
+                                    type="number"
+                                    min="0"
+                                    defaultValue={course.unlockCost ?? 0}
+                                    disabled={level !== "intermediate"}
+                                    placeholder="0 = auto (50 × #chapters)"
+                                />
+                                <p className="text-xs text-zinc-500">
+                                    Leave 0 to auto-compute from the chapter count.
+                                </p>
+                            </div>
+                            <div className={`flex flex-col gap-2 ${level !== "advanced" ? "opacity-40" : ""}`}>
+                                <label className="text-sm font-medium">Mock checkout price (₫)</label>
+                                <Input
+                                    name="priceVnd"
+                                    type="number"
+                                    min="0"
+                                    step="1000"
+                                    defaultValue={course.priceVnd ?? 0}
+                                    disabled={level !== "advanced"}
+                                    placeholder="0 = auto from default ladder"
+                                />
+                                <p className="text-xs text-zinc-500">
+                                    Leave 0 to use a stable per-course default (99.000₫–399.000₫).
+                                </p>
+                            </div>
                         </div>
                     </div>
 

@@ -18,7 +18,12 @@ export const CoursesTable = pgTable("courses", {
     level: varchar().default("beginner"),
     tags: varchar(),
     editorType: varchar(),
+    // Stars (XP) a learner must spend to enrol in an intermediate course.
+    // 0 means "auto-compute from chapter count" — see lib/course-access.
     unlockCost: integer().default(0),
+    // VND price an advanced course costs in the mock checkout. 0 means
+    // "auto-pick a stable default per courseId" — see lib/course-access.
+    priceVnd: integer().default(0),
 });
 
 export const CourseChapterTable = pgTable("courseChapters", {
@@ -126,3 +131,25 @@ export type LessonContent =
     | ({ type: 'pdf' } & PdfLessonContent)
     | ({ type: 'exercise' } & ExerciseLessonContent)
     | ({ type: 'quiz' } & QuizLessonContent);
+
+// Records every course-access transaction — both star-unlocks (where the
+// learner spends accumulated XP) and mock-VND purchases (Phase 5 demo
+// checkout; will be swapped for a real provider later). Rows here drive
+// the admin revenue/user-quality charts and are what /admin/users would
+// surface as a learner's purchase history.
+export const PaymentsTable = pgTable('payments', {
+    id: integer().primaryKey().generatedAlwaysAsIdentity(),
+    userId: varchar().notNull(),
+    courseId: integer().notNull(),
+    // 'stars' for star-unlocks, 'mock_vnd' for the Phase 5 demo checkout.
+    // Future: 'stripe', 'vnpay', 'momo'.
+    method: varchar({ length: 32 }).notNull(),
+    // Set for VND-based transactions; null for star-unlocks.
+    amountVnd: integer(),
+    // Set for star-unlocks; null for VND transactions.
+    starsSpent: integer(),
+    // 'succeeded' for completed enrolments; 'pending' / 'failed' /
+    // 'refunded' kept for future real-provider flows.
+    status: varchar({ length: 16 }).notNull(),
+    createdAt: timestamp().defaultNow(),
+});

@@ -19,6 +19,7 @@ export async function updateCourseAction(courseId: number, formData: FormData) {
     const tags = formData.get("tags") as string;
     const editorType = formData.get("editorType") as string;
     const unlockCost = Number(formData.get("unlockCost") || 0);
+    const priceVnd = Number(formData.get("priceVnd") || 0);
 
     // Cập nhật dữ liệu vào Neon DB
     await db
@@ -31,6 +32,7 @@ export async function updateCourseAction(courseId: number, formData: FormData) {
         tags,
         editorType,
         unlockCost,
+        priceVnd,
       })
       .where(eq(CoursesTable.courseId, courseId));
 
