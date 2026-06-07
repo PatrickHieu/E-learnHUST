@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import Image from 'next/image'
 import CourseList from './_components/CourseList'
 
@@ -21,7 +21,14 @@ function Courses() {
                 <h2 className='font-game text-4xl'>
                     All Courses
                 </h2>
-                <CourseList showFilters />
+                {/* CourseList reads ?level= via useSearchParams to pre-apply
+                    the filter from the paywall's "earn more stars" link.
+                    Next.js requires that hook to live inside a Suspense
+                    boundary or the page bails out of prerendering at build
+                    time. */}
+                <Suspense fallback={null}>
+                    <CourseList showFilters />
+                </Suspense>
             </div>
         </div>
     )
