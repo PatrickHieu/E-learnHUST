@@ -2,7 +2,13 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { and, desc, eq, gte, isNotNull, sql } from "drizzle-orm";
 import { db } from "@/config/db";
-import { CoursesTable, PaymentsTable } from "@/config/schema";
+import {
+  CompletedLessonTable,
+  CoursesTable,
+  EnrolledCourseTable,
+  PaymentsTable,
+  usersTable,
+} from "@/config/schema";
 import { checkRole } from "@/lib/checkRole";
 import { formatVnd } from "@/lib/course-access";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,8 +17,13 @@ import {
   ShoppingCart,
   Star as StarIcon,
   TrendingUp,
+  Users,
+  GraduationCap,
+  Activity,
+  CheckCircle2,
 } from "lucide-react";
 import RevenueChart, { type RevenuePoint } from "./RevenueChart";
+import UserActivityChart, { type ActivityPoint } from "./UserActivityChart";
 import RangePicker from "./RangePicker";
 
 // Inclusive day window: subtract (days - 1) so range=7 = today plus the
@@ -42,6 +53,29 @@ function zeroFill(
       day: key,
       revenue: hit ? Number(hit.revenue) : 0,
       txns: hit ? Number(hit.txns) : 0,
+    });
+  }
+  return out;
+}
+
+// Same shape as zeroFill but for the DAU/completions series. Kept
+// separate so the field types stay tight.
+function zeroFillActivity(
+  rows: { day: string; dau: number; completions: number }[],
+  days: number,
+): ActivityPoint[] {
+  const byDay = new Map(rows.map((r) => [r.day, r]));
+  const out: ActivityPoint[] = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    const hit = byDay.get(key);
+    out.push({
+      day: key,
+      dau: hit ? Number(hit.dau) : 0,
+      completions: hit ? Number(hit.completions) : 0,
     });
   }
   return out;
@@ -167,6 +201,78 @@ export default async function AdminAnalyticsPage({
     : [];
   const titleByCourseId = new Map(courses.map((c) => [c.courseId, c.title]));
 
+  // ---- User-quality funnel + activity series ----
+  // The funnel shows how many learners reach each engagement stage:
+  // registered → enrolled in ≥1 course → completed ≥1 lesson in range →
+  // active right now (last 7 days). Each step is a server-side COUNT
+  // DISTINCT so big tables don't pull into memory.
+  const [
+    [totalUsersRow],
+    [enrolledUsersRow],
+    [activeInRangeRow],
+    [activeLast7Row],
+    [totalCompletionsInRangeRow],
+  ] = await Promise.all([
+    db.select({ value: sql<number>`COUNT(*)::int` }).from(usersTable),
+    db
+      .select({
+        value: sql<number>`COUNT(DISTINCT ${EnrolledCourseTable.userId})::int`,
+      })
+      .from(EnrolledCourseTable),
+    db
+      .select({
+        value: sql<number>`COUNT(DISTINCT ${CompletedLessonTable.userId})::int`,
+      })
+      .from(CompletedLessonTable)
+      .where(gte(CompletedLessonTable.completedAt, cutoff)),
+    db
+      .select({
+        value: sql<number>`COUNT(DISTINCT ${CompletedLessonTable.userId})::int`,
+      })
+      .from(CompletedLessonTable)
+      .where(gte(CompletedLessonTable.completedAt, rangeCutoff(7))),
+    db
+      .select({ value: sql<number>`COUNT(*)::int` })
+      .from(CompletedLessonTable)
+      .where(gte(CompletedLessonTable.completedAt, cutoff)),
+  ]);
+
+  const totalUsers = Number(totalUsersRow.value);
+  const enrolledUsers = Number(enrolledUsersRow.value);
+  const activeInRange = Number(activeInRangeRow.value);
+  const activeLast7 = Number(activeLast7Row.value);
+  const totalCompletionsInRange = Number(totalCompletionsInRangeRow.value);
+  // Average lessons completed per active learner in the window.
+  // Don't divide by zero when no one's active yet.
+  const avgCompletionsPerActive =
+    activeInRange > 0
+      ? Math.round((totalCompletionsInRange / activeInRange) * 10) / 10
+      : 0;
+  // Conversion rates as percentages, rounded to whole points.
+  const pct = (num: number, den: number) =>
+    den > 0 ? Math.round((num / den) * 100) : 0;
+
+  // ---- DAU series ----
+  const activityRows = await db
+    .select({
+      day: sql<string>`TO_CHAR(${CompletedLessonTable.completedAt}::date, 'YYYY-MM-DD')`,
+      dau: sql<number>`COUNT(DISTINCT ${CompletedLessonTable.userId})::int`,
+      completions: sql<number>`COUNT(*)::int`,
+    })
+    .from(CompletedLessonTable)
+    .where(gte(CompletedLessonTable.completedAt, cutoff))
+    .groupBy(sql`${CompletedLessonTable.completedAt}::date`)
+    .orderBy(sql`${CompletedLessonTable.completedAt}::date`);
+
+  const activityData = zeroFillActivity(
+    activityRows.map((r) => ({
+      day: r.day,
+      dau: Number(r.dau),
+      completions: Number(r.completions),
+    })),
+    days,
+  );
+
   return (
     <div className="font-sans flex flex-col gap-6">
       <div className="flex items-center justify-between">
@@ -260,6 +366,56 @@ export default async function AdminAnalyticsPage({
           )}
         </CardContent>
       </Card>
+
+      {/* ─── User quality ───────────────────────────────────────────── */}
+      <div className="pt-2">
+        <h2 className="text-xl font-semibold tracking-tight">User quality</h2>
+        <p className="text-sm text-zinc-500 mt-1">
+          How many learners reach each engagement stage, and how active they are right now.
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Registered"
+          value={String(totalUsers)}
+          icon={<Users className="w-4 h-4 text-zinc-400" />}
+          sub={`${pct(enrolledUsers, totalUsers)}% enrolled in ≥1 course`}
+        />
+        <StatCard
+          label="Enrolled"
+          value={String(enrolledUsers)}
+          icon={<GraduationCap className="w-4 h-4 text-zinc-400" />}
+          sub={`${pct(activeInRange, enrolledUsers)}% active in last ${days}d`}
+        />
+        <StatCard
+          label={`Active (last ${days}d)`}
+          value={String(activeInRange)}
+          icon={<Activity className="w-4 h-4 text-green-500" />}
+          sub={`${activeLast7} also active in last 7d`}
+        />
+        <StatCard
+          label="Avg lessons / active learner"
+          value={String(avgCompletionsPerActive)}
+          icon={<CheckCircle2 className="w-4 h-4 text-zinc-400" />}
+          sub={`${totalCompletionsInRange} total completions`}
+        />
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">
+            Active learners per day (last {days}d)
+          </CardTitle>
+          <p className="text-xs text-zinc-500">
+            Number of distinct learners who completed at least one lesson on that day.
+            Days with zero activity render as blank bars so the timeline stays continuous.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <UserActivityChart data={activityData} />
+        </CardContent>
+      </Card>
     </div>
   );
 }
@@ -268,10 +424,12 @@ function StatCard({
   label,
   value,
   icon,
+  sub,
 }: {
   label: string;
   value: string;
   icon: React.ReactNode;
+  sub?: string;
 }) {
   return (
     <Card>
@@ -283,6 +441,9 @@ function StatCard({
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-semibold">{value}</div>
+        {sub && (
+          <p className="text-xs text-zinc-500 mt-1">{sub}</p>
+        )}
       </CardContent>
     </Card>
   );
