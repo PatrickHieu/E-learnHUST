@@ -21,6 +21,11 @@ import {
 } from "drizzle-orm";
 import { currentUser } from "@clerk/nextjs/server";
 import { isLessonGating } from "@/lib/chapter-gating";
+import {
+  effectivePriceVnd,
+  effectiveUnlockCost,
+  getAccessTier,
+} from "@/lib/course-access";
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -226,5 +231,54 @@ export async function GET(req: NextRequest) {
     ? await db.select().from(CoursesTable).where(and(...conditions))
     : await db.select().from(CoursesTable);
 
-  return NextResponse.json(result);
+  // Phase 5: enrich each row with the computed access tier + the actual
+  // numeric cost the paywall should display (auto-computed when the
+  // admin left the column at 0). We also surface chapter count so the
+  // auto-unlock formula stays in lib/course-access and isn't duplicated
+  // client-side. Enrolment status is per-user and lets the listing skip
+  // the lock overlay for courses the learner already owns.
+  const courseIds = result.map((c) => c.courseId);
+  const chapterCounts = new Map<number, number>();
+  if (courseIds.length > 0) {
+    const chapterRows = await db
+      .select({
+        courseId: CourseChapterTable.courseId,
+        chapterId: CourseChapterTable.chapterId,
+      })
+      .from(CourseChapterTable)
+      .where(inArray(CourseChapterTable.courseId, courseIds));
+    for (const row of chapterRows) {
+      chapterCounts.set(row.courseId, (chapterCounts.get(row.courseId) ?? 0) + 1);
+    }
+  }
+  const enrolledIds = new Set<number>();
+  if (courseIds.length > 0) {
+    const enrolledRows = await db
+      .select({ courseId: EnrolledCourseTable.courseId })
+      .from(EnrolledCourseTable)
+      .where(
+        and(
+          eq(EnrolledCourseTable.userId, userId),
+          inArray(EnrolledCourseTable.courseId, courseIds),
+        ),
+      );
+    for (const row of enrolledRows) {
+      if (row.courseId != null) enrolledIds.add(row.courseId);
+    }
+  }
+
+  const enriched = result.map((c) => {
+    const chapterCount = chapterCounts.get(c.courseId) ?? 0;
+    const tier = getAccessTier(c.level);
+    return {
+      ...c,
+      accessTier: tier,
+      chapterCount,
+      effectiveUnlockCost: effectiveUnlockCost(c.level, c.unlockCost, chapterCount),
+      effectivePriceVnd: effectivePriceVnd(c.level, c.priceVnd, c.courseId),
+      enrolled: enrolledIds.has(c.courseId),
+    };
+  });
+
+  return NextResponse.json(enriched);
 }

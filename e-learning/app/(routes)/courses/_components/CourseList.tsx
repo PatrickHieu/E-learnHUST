@@ -2,8 +2,10 @@
 import axios from 'axios'
 import React, { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
-import { ChartNoAxesColumnIncreasingIcon, Search, X } from 'lucide-react'
+import { ChartNoAxesColumnIncreasingIcon, Lock, Search, Star, X } from 'lucide-react'
 import Link from 'next/link'
+import PaywallModal from './PaywallModal'
+import { formatVnd } from '@/lib/course-access'
 
 export type Course = {
     id: number,
@@ -14,10 +16,17 @@ export type Course = {
     bannerImage: string,
     tag: string,
     unlockCost?: number,
+    priceVnd?: number,
     chapters?: Chapter[],
     userEnrolled?: boolean,
     courseEnrolledInfo?: CourseEnrolledInfo,
-    completedLessonIds?: number[]
+    completedLessonIds?: number[],
+    // Phase 5 enrichment from /api/course
+    accessTier?: 'free' | 'star' | 'paid',
+    chapterCount?: number,
+    effectiveUnlockCost?: number,
+    effectivePriceVnd?: number,
+    enrolled?: boolean,
 }
 
 export type CourseEnrolledInfo = {
@@ -71,6 +80,7 @@ function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }
     const [loading, setLoading] = useState(false);
     const [q, setQ] = useState('');
     const [level, setLevel] = useState<string | null>(null);
+    const [paywallCourse, setPaywallCourse] = useState<Course | null>(null);
     const isInitialMount = useRef(true);
 
     const fetchCourses = async () => {
@@ -158,12 +168,30 @@ function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }
                 </div>
             ) : (
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 mt-3'>
-                    {visibleCourses.map((course, index) => (
-                        <Link href={'/courses/' + course?.courseId} key={course?.courseId ?? index}>
-                            <div className='border-4 rounded-xl hover:bg-zinc-900 cursor-pointer'>
-                                <Image src={course?.bannerImage.trimEnd()} alt={course?.title} width={400} height={400}
-                                    className={`w-full object-cover rounded-t-lg ${smallerCard ? 'h-[120px]' : 'h-[200px]'}`}
-                                />
+                    {visibleCourses.map((course, index) => {
+                        const tier = course.accessTier ?? 'free';
+                        const isLocked = tier !== 'free' && !course.enrolled;
+                        const cardInner = (
+                            <div className='border-4 rounded-xl hover:bg-zinc-900 cursor-pointer relative overflow-hidden'>
+                                <div className='relative'>
+                                    <Image
+                                        src={course?.bannerImage.trimEnd()}
+                                        alt={course?.title}
+                                        width={400}
+                                        height={400}
+                                        className={`w-full object-cover rounded-t-lg ${smallerCard ? 'h-[120px]' : 'h-[200px]'} ${isLocked ? 'opacity-70' : ''}`}
+                                    />
+                                    {isLocked && (
+                                        <div className='absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 pointer-events-none'>
+                                            <div className='w-12 h-12 rounded-full bg-black/70 flex items-center justify-center border-2 border-yellow-400'>
+                                                <Lock className='w-6 h-6 text-yellow-300' />
+                                            </div>
+                                            <span className='font-game text-sm uppercase tracking-wider text-yellow-300'>
+                                                {tier === 'star' ? 'Star unlock' : 'Paid'}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                                 <div className='p-4'>
                                     <h2 className='font-game text-2xl'>
                                         {course?.title}
@@ -171,16 +199,51 @@ function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }
                                     <p className='font-game text-xl text-gray-400 line-clamp-2'>
                                         {course?.desc}
                                     </p>
-                                    <h2 className='bg-zinc-800 flex gap-2 font-game p-1 px-4 mt-3 rounded-2xl items-center inline-flex text-green-600 text-lg'>
-                                        <ChartNoAxesColumnIncreasingIcon className='h-4 w-4' />
-                                        {course?.level}
-                                    </h2>
+                                    <div className='flex items-center gap-2 flex-wrap mt-3'>
+                                        <h2 className='bg-zinc-800 inline-flex gap-2 font-game p-1 px-4 rounded-2xl items-center text-green-600 text-lg'>
+                                            <ChartNoAxesColumnIncreasingIcon className='h-4 w-4' />
+                                            {course?.level}
+                                        </h2>
+                                        {isLocked && tier === 'star' && (
+                                            <h2 className='bg-yellow-400/10 border border-yellow-400/40 inline-flex gap-2 font-game p-1 px-4 rounded-2xl items-center text-yellow-300 text-lg'>
+                                                <Star className='h-4 w-4 fill-yellow-300 text-yellow-300' />
+                                                {course.effectiveUnlockCost?.toLocaleString('vi-VN') ?? 0}
+                                            </h2>
+                                        )}
+                                        {isLocked && tier === 'paid' && (
+                                            <h2 className='bg-blue-500/10 border border-blue-500/40 font-game p-1 px-4 rounded-2xl inline-flex items-center text-blue-300 text-lg'>
+                                                {formatVnd(course.effectivePriceVnd ?? 0)}
+                                            </h2>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
-                        </Link>
-                    ))}
+                        );
+                        // Locked cards open the paywall modal; everything else
+                        // continues to the existing course detail page.
+                        return isLocked ? (
+                            <button
+                                key={course?.courseId ?? index}
+                                type='button'
+                                onClick={() => setPaywallCourse(course)}
+                                className='text-left'
+                            >
+                                {cardInner}
+                            </button>
+                        ) : (
+                            <Link href={'/courses/' + course?.courseId} key={course?.courseId ?? index}>
+                                {cardInner}
+                            </Link>
+                        );
+                    })}
                 </div>
             )}
+
+            <PaywallModal
+                course={paywallCourse}
+                open={paywallCourse !== null}
+                onClose={() => setPaywallCourse(null)}
+            />
         </div>
     )
 }
