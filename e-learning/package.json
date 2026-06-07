@@ -12,7 +12,8 @@
     "seed:phase3-demo": "tsx scripts/seed-phase3-demo.ts",
     "seed:fake-users": "tsx scripts/seed-fake-users.ts",
     "seed:fake-payments": "tsx scripts/seed-fake-payments.ts",
-    "bootstrap:admin": "tsx scripts/bootstrap-admin.ts"
+    "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
+    "bootstrap:test-accounts": "tsx scripts/bootstrap-test-accounts.ts"
   },
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.20.0",
