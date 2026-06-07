@@ -1,4 +1,5 @@
 import "dotenv/config";
+import bcrypt from "bcryptjs";
 import { and, eq, sql } from "drizzle-orm";
 import { db } from "../config/db";
 import {
@@ -8,6 +9,11 @@ import {
   LessonsTable,
   usersTable,
 } from "../config/schema";
+
+// Single shared password for every seeded fake user — easier than
+// remembering 30 of them. Admin can sign in as any seeded learner
+// with this combo to test their experience.
+const SEED_PASSWORD = "password";
 
 // Seeds ~30 fake students with realistic Vietnamese + English names,
 // enrols each one in 0–3 random existing courses, and marks a varying
@@ -149,9 +155,14 @@ async function main() {
       .limit(1);
 
     if (existing.length === 0) {
+      // bcrypt-hash once and reuse across every seed user — bcrypt's
+      // salt makes the hash itself unique per row regardless.
+      const passwordHash = await bcrypt.hash(SEED_PASSWORD, 10);
       await db.insert(usersTable).values({
         name: fake.name,
         email,
+        passwordHash,
+        role: "student",
         points: 0,
         subscription: null,
       });

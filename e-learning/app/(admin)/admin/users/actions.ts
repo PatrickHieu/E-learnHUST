@@ -1,23 +1,32 @@
 "use server";
 
-import { clerkClient } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
+import { eq } from "drizzle-orm";
+import { db } from "@/config/db";
+import { usersTable } from "@/config/schema";
 import { checkRole } from "@/lib/checkRole";
 
-// Promote / demote between Librarian and Student. Admin-only — only an
-// admin can grant the librarian role (Phase 2 spec).
+// Promote / demote between Librarian and Student by writing to
+// usersTable.role. Admin-only — only an admin can grant the
+// librarian role (Phase 2 spec). Accepts the numeric users.id as a
+// string so the form field carries the same value the URL uses.
 export async function setUserRoleAction(
-  clerkUserId: string,
+  userId: string,
   role: "librarian" | "student",
 ) {
   if (!(await checkRole("admin"))) {
     throw new Error("Forbidden: admin only");
   }
 
-  const client = await clerkClient();
-  await client.users.updateUserMetadata(clerkUserId, {
-    publicMetadata: { role },
-  });
+  const numericId = Number(userId);
+  if (!Number.isFinite(numericId)) {
+    throw new Error("Invalid user id");
+  }
+
+  await db
+    .update(usersTable)
+    .set({ role })
+    .where(eq(usersTable.id, numericId));
 
   revalidatePath("/admin/users");
 }

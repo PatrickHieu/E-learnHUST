@@ -31,7 +31,6 @@ export type UserRow = {
   email: string;
   points: number | null;
   subscription: string | null;
-  clerkId: string | null;
   role: string;
 };
 
@@ -119,14 +118,10 @@ function UsersList({ users }: Props) {
                         View
                       </Button>
                     </Link>
-                    {user.clerkId ? (
-                      <RoleToggleButton
-                        clerkUserId={user.clerkId}
-                        currentRole={user.role}
-                      />
-                    ) : (
-                      <span className="text-xs text-zinc-500">No Clerk account</span>
-                    )}
+                    <RoleToggleButton
+                      userId={String(user.id)}
+                      currentRole={user.role}
+                    />
                   </div>
                 </TableCell>
               </TableRow>

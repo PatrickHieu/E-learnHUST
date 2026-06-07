@@ -19,7 +19,7 @@ import {
   getTableColumns,
   type SQL,
 } from "drizzle-orm";
-import { currentUser } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { isLessonGating } from "@/lib/chapter-gating";
 import {
   effectivePriceVnd,
@@ -30,8 +30,8 @@ import {
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const rawCourseId = searchParams.get("courseId") || searchParams.get("courseid");
-  const user = await currentUser();
-  const userId = user?.id;
+  const session = await auth();
+  const userId = session?.user?.id;
 
   if (!userId) {
     return NextResponse.json(
