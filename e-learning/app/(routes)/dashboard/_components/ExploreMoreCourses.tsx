@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import CourseList from '../../courses/_components/CourseList'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
@@ -12,7 +12,11 @@ function ExploreMoreCourses() {
                 <Button className='font-game text-lg' variant="pixel">View All</Button>
               </Link>
           </div>
-          <CourseList smallerCard={true} maxLimit={5} />
+          {/* CourseList uses useSearchParams internally — wrap in
+              Suspense so the dashboard still prerenders cleanly. */}
+          <Suspense fallback={null}>
+            <CourseList smallerCard={true} maxLimit={5} />
+          </Suspense>
     </div>
   )
 }
