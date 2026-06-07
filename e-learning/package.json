@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "seed:demo": "tsx scripts/seed-demo-content.ts",
-    "seed:phase3-demo": "tsx scripts/seed-phase3-demo.ts"
+    "seed:phase3-demo": "tsx scripts/seed-phase3-demo.ts",
+    "seed:fake-users": "tsx scripts/seed-fake-users.ts"
   },
   "dependencies": {
     "@clerk/elements": "^0.24.2",
