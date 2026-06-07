@@ -35,13 +35,13 @@ const PAY_METHODS: ReadonlyArray<{
   {
     key: "vnpay",
     label: "VNPay",
-    desc: "Cổng thanh toán quốc gia",
+    desc: "National payment gateway",
     icon: <Building2 className="w-5 h-5 text-blue-400" />,
   },
   {
     key: "momo",
     label: "MoMo",
-    desc: "Ví điện tử MoMo",
+    desc: "MoMo e-wallet",
     icon: <Smartphone className="w-5 h-5 text-pink-400" />,
   },
   {
@@ -75,7 +75,7 @@ function PaywallModal({ course, open, onClose }: Props) {
         { courseId: course.courseId },
       );
       toast.success(
-        `Đã mở khóa khóa học! Còn lại ${res.data.remaining} ⭐`,
+        `Course unlocked! ${res.data.remaining} ⭐ remaining`,
       );
       await refreshUserDetail();
       onClose();
@@ -83,7 +83,7 @@ function PaywallModal({ course, open, onClose }: Props) {
       router.refresh();
     } catch (err: any) {
       const reason =
-        err?.response?.data?.error ?? "Không thể mở khóa khóa học.";
+        err?.response?.data?.error ?? "Couldn't unlock the course.";
       toast.error(reason);
     } finally {
       setSubmitting(false);
@@ -101,14 +101,14 @@ function PaywallModal({ course, open, onClose }: Props) {
         courseId: course.courseId,
         method: chosenMethod,
       });
-      toast.success("Thanh toán thành công! Chúc bạn học tốt.");
+      toast.success("Payment successful! Enjoy the course.");
       await refreshUserDetail();
       onClose();
       router.push(`/courses/${course.courseId}`);
       router.refresh();
     } catch (err: any) {
       const reason =
-        err?.response?.data?.error ?? "Thanh toán không thành công.";
+        err?.response?.data?.error ?? "Payment failed.";
       toast.error(reason);
     } finally {
       setSubmitting(false);
@@ -196,42 +196,42 @@ function StarUnlockBody({
       <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border-2 border-zinc-800">
         <div>
           <p className="text-xs uppercase text-zinc-500 tracking-wider">
-            Chi phí mở khóa
+            Unlock cost
           </p>
           <p className="font-game text-3xl text-yellow-300 inline-flex items-center gap-2">
             <Star className="w-6 h-6 fill-yellow-300 text-yellow-300" />
-            {cost.toLocaleString("vi-VN")}
+            {cost.toLocaleString("en-US")}
           </p>
         </div>
         <div className="text-right">
           <p className="text-xs uppercase text-zinc-500 tracking-wider">
-            Bạn đang có
+            You have
           </p>
           <p className="font-game text-xl text-white inline-flex items-center gap-2">
             <Star className="w-4 h-4 fill-yellow-400/60 text-yellow-400" />
-            {balance.toLocaleString("vi-VN")}
+            {balance.toLocaleString("en-US")}
           </p>
         </div>
       </div>
 
       {canAfford ? (
         <div className="flex items-center justify-between text-sm font-game">
-          <span className="text-zinc-400">Sau khi mở khóa, bạn còn:</span>
+          <span className="text-zinc-400">After unlock you&apos;ll have:</span>
           <span className="text-green-400 inline-flex items-center gap-1">
             <Star className="w-3.5 h-3.5 fill-green-400 text-green-400" />
-            {remaining.toLocaleString("vi-VN")} ⭐
+            {remaining.toLocaleString("en-US")} ⭐
           </span>
         </div>
       ) : (
         <div className="p-3 rounded-md border border-red-500/40 bg-red-500/10 text-sm font-game text-red-200">
-          Bạn cần thêm {(cost - balance).toLocaleString("vi-VN")} ⭐ để mở khóa khóa học này.
+          You need {(cost - balance).toLocaleString("en-US")} more ⭐ to unlock this course.
           {" "}
           <Link
             href="/courses?level=beginner"
             onClick={onClose}
             className="underline text-yellow-300 ml-1"
           >
-            Học các khóa miễn phí để kiếm thêm sao →
+            Take free courses to earn more stars →
           </Link>
         </div>
       )}
@@ -243,7 +243,7 @@ function StarUnlockBody({
         onClick={onConfirm}
         className="font-game text-lg w-full"
       >
-        {submitting ? "Đang xử lý…" : `Mở khóa với ${cost.toLocaleString("vi-VN")} ⭐`}
+        {submitting ? "Processing…" : `Unlock for ${cost.toLocaleString("en-US")} ⭐`}
       </Button>
     </>
   );
@@ -266,14 +266,14 @@ function PaidCheckoutBody({
     <>
       <div className="flex items-center justify-between p-4 rounded-xl bg-zinc-900 border-2 border-zinc-800">
         <p className="text-xs uppercase text-zinc-500 tracking-wider">
-          Học phí
+          Course price
         </p>
         <p className="font-game text-3xl text-blue-400">{formatVnd(price)}</p>
       </div>
 
       <div className="flex flex-col gap-2">
         <p className="text-xs uppercase text-zinc-500 tracking-wider font-game">
-          Chọn phương thức thanh toán
+          Choose a payment method
         </p>
         {PAY_METHODS.map((m) => {
           const active = chosen === m.key;
@@ -298,7 +298,7 @@ function PaidCheckoutBody({
               </div>
               {active && (
                 <span className="font-game text-xs text-yellow-300 uppercase">
-                  Đã chọn
+                  Selected
                 </span>
               )}
             </button>
@@ -314,11 +314,11 @@ function PaidCheckoutBody({
         className="font-game text-lg w-full"
       >
         {submitting
-          ? "Đang xử lý thanh toán…"
-          : `Thanh toán ${formatVnd(price)}`}
+          ? "Processing payment…"
+          : `Pay ${formatVnd(price)}`}
       </Button>
       <p className="text-xs text-zinc-500 text-center">
-        Đây là cổng thanh toán mô phỏng (mock). Không có giao dịch thật.
+        This is a mock payment gateway — no real transaction is made.
       </p>
     </>
   );
