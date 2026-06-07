@@ -1,5 +1,6 @@
 import NextAuth, { type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db } from "@/config/db";
@@ -28,6 +29,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     signIn: "/sign-in",
   },
   providers: [
+    // Google OAuth — for project owners signing in with their own
+    // Gmail. AUTH_GOOGLE_ID / AUTH_GOOGLE_SECRET come from a Google
+    // Cloud Console OAuth 2.0 client; redirect URI must be
+    // {origin}/api/auth/callback/google. If the env vars are unset
+    // the provider just doesn't render, which is fine for local
+    // tinkering without a Google project.
+    Google({
+      clientId: process.env.AUTH_GOOGLE_ID,
+      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+      // Promote profile info onto the user object so the signIn
+      // callback can match by a normalised email regardless of casing.
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+        };
+      },
+    }),
     Credentials({
       credentials: {
         email: { label: "Email", type: "email" },
@@ -62,6 +83,45 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    // Google sign-in lands with the provider's user.id (Google's sub
+    // claim) and no role. Map it onto our usersTable: find by email or
+    // create a fresh row, then rewrite user.id + user.role so the rest
+    // of the system sees the same shape as a Credentials sign-in.
+    async signIn({ user, account }) {
+      if (account?.provider !== "google") return true;
+
+      const email = user.email?.trim().toLowerCase();
+      if (!email) return false;
+
+      const [existing] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.email, email))
+        .limit(1);
+
+      if (existing) {
+        user.id = String(existing.id);
+        (user as { role?: string }).role = existing.role;
+        return true;
+      }
+
+      // First Google sign-in for this email → create a row. The
+      // passwordHash stays null so they can only sign back in with
+      // Google going forward (or run bootstrap-admin to set one).
+      const [created] = await db
+        .insert(usersTable)
+        .values({
+          name: user.name ?? email.split("@")[0],
+          email,
+          role: "student",
+          points: 0,
+        })
+        .returning();
+      user.id = String(created.id);
+      (user as { role?: string }).role = created.role;
+      return true;
+    },
+
     async jwt({ token, user }) {
       // user is only populated on initial sign-in. Pin id + role onto
       // the token so subsequent requests don't need a DB hit.
