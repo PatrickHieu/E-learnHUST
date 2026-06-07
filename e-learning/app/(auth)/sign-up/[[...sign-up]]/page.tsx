@@ -25,7 +25,7 @@ export default function SignUpPage() {
                             <Clerk.Input
                                 type="email"
                                 required
-                                className="w-full px-3 py-2 bg-zinc-900 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-400 text-white"
+                                className="w-full px-3 py-2 bg-zinc-900 text-white caret-yellow-400 placeholder:text-zinc-500 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-400"
                             />
                             <Clerk.FieldError className="text-sm text-red-500" />
                         </Clerk.Field>
@@ -35,7 +35,7 @@ export default function SignUpPage() {
                             <Clerk.Input
                                 type="password"
                                 required
-                                className="w-full px-3 py-2 bg-zinc-900 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-400 text-white"
+                                className="w-full px-3 py-2 bg-zinc-900 text-white caret-yellow-400 placeholder:text-zinc-500 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-400"
                             />
                             <Clerk.FieldError className="text-sm text-red-500" />
                         </Clerk.Field>
@@ -66,7 +66,7 @@ export default function SignUpPage() {
                     <SignUp.Strategy name="email_code">
                         <Clerk.Field name="code" className="space-y-1">
                             <Clerk.Label className="font-bold text-yellow-400 uppercase">Email Code</Clerk.Label>
-                            <Clerk.Input type="otp" required className="w-full px-3 py-2 bg-zinc-900 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-400 text-white" />
+                            <Clerk.Input type="otp" required className="w-full px-3 py-2 bg-zinc-900 text-white caret-yellow-400 placeholder:text-zinc-500 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-400" />
                             <Clerk.FieldError className="text-sm text-red-500" />
                         </Clerk.Field>
                         <SignUp.Action submit className="w-full px-4 py-2 bg-yellow-400 border-2 border-black shadow-[4px_4px_0_0_#000] active:translate-y-[2px] active:shadow-none text-black font-bold uppercase">
@@ -94,7 +94,7 @@ export default function SignUpPage() {
                     <Clerk.GlobalError className="block text-sm text-red-500" />
                     <Clerk.Field name="username" className="space-y-1">
                         <Clerk.Label className="font-bold text-yellow-400 uppercase">Username</Clerk.Label>
-                        <Clerk.Input type="text" required className="w-full px-3 py-2 bg-zinc-900 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-400 text-white" />
+                        <Clerk.Input type="text" required className="w-full px-3 py-2 bg-zinc-900 text-white caret-yellow-400 placeholder:text-zinc-500 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-400" />
                         <Clerk.FieldError className="text-sm text-red-500" />
                     </Clerk.Field>
                     <SignUp.Action submit className="w-full px-4 py-2 bg-yellow-400 border-2 border-black shadow-[4px_4px_0_0_#000] active:translate-y-[2px] active:shadow-none text-black font-bold uppercase">

@@ -39,7 +39,7 @@ export default function SignInPage() {
               <Clerk.Input
                 type="email"
                 required
-                className="w-full px-3 py-2 bg-white border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-500"
+                className="w-full px-3 py-2 bg-white text-black caret-black placeholder:text-zinc-400 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-500"
               />
               <Clerk.FieldError className="text-sm text-red-500" />
             </Clerk.Field>
@@ -51,7 +51,7 @@ export default function SignInPage() {
               <Clerk.Input
                 type="password"
                 required
-                className="w-full px-3 py-2 bg-white border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-500"
+                className="w-full px-3 py-2 bg-white text-black caret-black placeholder:text-zinc-400 border-2 border-black shadow-[3px_3px_0_0_#000] outline-none focus:border-yellow-500"
               />
               <Clerk.FieldError className="text-sm text-red-500" />
             </Clerk.Field>
