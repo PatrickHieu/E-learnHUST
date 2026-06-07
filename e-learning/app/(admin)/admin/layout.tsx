@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { checkRole, hasAdminAccess } from "@/lib/checkRole";
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { LayoutDashboard, BookOpen, Users, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, BookOpen, Users, ArrowLeft, LineChart } from "lucide-react";
 
 export default async function AdminLayout({
     children,
@@ -47,6 +47,15 @@ export default async function AdminLayout({
                         >
                             <Users className="w-4 h-4" />
                             Users
+                        </Link>
+                    )}
+                    {isAdmin && (
+                        <Link
+                            href="/admin/analytics"
+                            className="flex items-center gap-3 px-3 py-2 rounded-md text-sm hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
+                        >
+                            <LineChart className="w-4 h-4" />
+                            Analytics
                         </Link>
                     )}
                 </nav>
