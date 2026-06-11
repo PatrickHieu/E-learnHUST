@@ -111,7 +111,7 @@ export default function CreateCoursePage() {
                                     name="level"
                                     value={level}
                                     onChange={(e) => setLevel(e.target.value as typeof level)}
-                                    className="flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                                    className="flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 [&_option]:bg-white [&_option]:text-zinc-900 dark:[&_option]:bg-zinc-900 dark:[&_option]:text-zinc-100"
                                 >
                                     <option value="beginner">Beginner (free)</option>
                                     <option value="intermediate">Intermediate (stars)</option>
@@ -122,7 +122,7 @@ export default function CreateCoursePage() {
                                 <label className="text-sm font-medium">Editor Type</label>
                                 <select
                                     name="editorType"
-                                    className="flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400"
+                                    className="flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 [&_option]:bg-white [&_option]:text-zinc-900 dark:[&_option]:bg-zinc-900 dark:[&_option]:text-zinc-100"
                                 >
                                     <option value="static">Static (HTML/CSS)</option>
                                     <option value="react">React</option>

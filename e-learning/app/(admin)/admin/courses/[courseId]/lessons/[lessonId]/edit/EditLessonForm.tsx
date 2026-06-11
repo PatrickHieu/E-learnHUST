@@ -21,8 +21,9 @@ type Props = {
   };
 };
 
+// See note in LessonForm.tsx — same readability fix.
 const SELECT_STYLE =
-  "flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400";
+  "flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 [&_option]:bg-white [&_option]:text-zinc-900 dark:[&_option]:bg-zinc-900 dark:[&_option]:text-zinc-100";
 
 export default function EditLessonForm({ courseId, lesson }: Props) {
   const [error, setError] = useState<string | null>(null);
