@@ -67,7 +67,7 @@ function LessonSidebar({
       {/* Back button + course title */}
       <div className="p-4 border-b-2 border-zinc-800 flex flex-col gap-2 shrink-0">
         <Link
-          href="/"
+          href="/courses"
           onClick={onNavigate}
           className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-yellow-300 transition-colors"
         >
