@@ -113,9 +113,17 @@ export async function POST(req: NextRequest) {
       ),
     );
 
+  // Stars are tracked in two columns:
+  // - points: spendable balance (consumed by intermediate unlocks)
+  // - lifetimePoints: total ever earned, never decremented
+  // The leaderboard ranks by lifetimePoints so a learner doesn't drop
+  // in the rankings just because they spent stars to unlock a course.
   await db
     .update(usersTable)
-    .set({ points: sql`${usersTable.points} + ${xpEarned}` })
+    .set({
+      points: sql`${usersTable.points} + ${xpEarned}`,
+      lifetimePoints: sql`${usersTable.lifetimePoints} + ${xpEarned}`,
+    })
     .where(eq(usersTable.email, userEmail));
 
   return NextResponse.json({ record, xpEarned });

@@ -5,11 +5,6 @@ import { Button } from '@/components/ui/button'
 import { Video, FileText, Code2, HelpCircle, Lock } from 'lucide-react'
 import { isChapterUnlocked } from '@/lib/chapter-gating'
 
-// Clerk billing supplied the pro-plan flag; until a replacement
-// subscription system lands, every learner is treated as a free
-// user. Chapters 3+ stay Pro-locked the same way they did before.
-const hasProAccess = false;
-
 import {
   Accordion,
   AccordionContent,
@@ -55,7 +50,6 @@ function CourseChapter({ loading, courseDetail }: Props) {
               chapterIndex,
               completedIds,
             );
-            const isProLocked = !hasProAccess && chapterIndex >= 2;
             return (
               <Accordion type="single" collapsible key={chapterIndex}>
                 <AccordionItem value="item-1">
@@ -69,7 +63,6 @@ function CourseChapter({ loading, courseDetail }: Props) {
                         {!chapterUnlocked && (
                           <Lock className="w-6 h-6 text-zinc-500" aria-label="Locked" />
                         )}
-                        {isProLocked && <h2 className='font-game text-3xl text-yellow-400'>Pro</h2>}
                       </div>
                     </div>
                   </AccordionTrigger>
@@ -83,11 +76,9 @@ function CourseChapter({ loading, courseDetail }: Props) {
                       {chapter?.lessons?.map((lesson) => {
                         const isCompleted = completedIds.includes(lesson.id);
                         const notEnrolled = !courseDetail?.userEnrolled;
-                        const isLocked = notEnrolled || isProLocked || !chapterUnlocked;
+                        const isLocked = notEnrolled || !chapterUnlocked;
                         const lockReason = notEnrolled
                           ? 'Please Enroll first'
-                          : isProLocked
-                          ? 'Pro only'
                           : 'Complete previous chapter first';
                         return (
                           <div key={lesson.id} className='flex items-center justify-between mb-7'>

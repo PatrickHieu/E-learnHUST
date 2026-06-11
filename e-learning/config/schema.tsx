@@ -12,7 +12,17 @@ export const usersTable = pgTable("users", {
     // 'student' | 'librarian' | 'admin'. Replaces Clerk publicMetadata.role
     // as the single source of truth for access gates.
     role: varchar({ length: 16 }).default("student").notNull(),
+    // Spendable star balance — incremented on lesson completion,
+    // decremented when a learner unlocks an intermediate course. This
+    // is what the paywall checks against.
     points: integer().default(0),
+    // Total stars EVER earned. Only ever increases — unlocks never
+    // touch this column. Used by the leaderboard so spending stars on
+    // courses doesn't make a learner drop in the rankings.
+    lifetimePoints: integer().default(0).notNull(),
+    // 'pro' means the learner bought the unlimited-access subscription
+    // (see /api/subscription/checkout). Anything else (null / 'FREE')
+    // is treated as no subscription. Pro bypasses every tier paywall.
     subscription: varchar()
 });
 
