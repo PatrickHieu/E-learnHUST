@@ -19,8 +19,12 @@ type Props = {
 
 type LessonType = "video" | "pdf" | "exercise" | "quiz";
 
+// `bg-transparent` shows the parent card colour; pinning text-* on
+// both the select and every <option> child so the open dropdown
+// reads on every OS (Chrome on Windows in particular renders
+// <option> with bright OS-blue background otherwise).
 const SELECT_STYLE =
-  "flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400";
+  "flex h-9 w-full rounded-md border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-400 [&_option]:bg-white [&_option]:text-zinc-900 dark:[&_option]:bg-zinc-900 dark:[&_option]:text-zinc-100";
 
 export default function LessonForm({ courseId, chapters }: Props) {
   const [type, setType] = useState<LessonType>("video");
