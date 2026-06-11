@@ -6,6 +6,7 @@ import {
   CoursesTable,
   EnrolledCourseTable,
   LessonsTable,
+  usersTable,
 } from "@/config/schema";
 import {
   eq,
@@ -25,6 +26,7 @@ import {
   effectivePriceVnd,
   effectiveUnlockCost,
   getAccessTier,
+  hasProSubscription,
 } from "@/lib/course-access";
 
 export async function GET(req: NextRequest) {
@@ -110,6 +112,19 @@ export async function GET(req: NextRequest) {
         ),
       );
 
+    // Same Pro lookup as the listing branch — Pro learners count as
+    // enrolled even without an EnrolledCourseTable row, so the course
+    // detail page renders the full chapter list / no enrol CTA.
+    const userEmailSingle = session?.user?.email;
+    const [userRowSingle] = userEmailSingle
+      ? await db
+          .select({ subscription: usersTable.subscription })
+          .from(usersTable)
+          .where(eq(usersTable.email, userEmailSingle))
+          .limit(1)
+      : [];
+    const isProSingle = hasProSubscription(userRowSingle?.subscription);
+
     const chapters = chapterRows.map((ch) => ({
       ...ch,
       lessons: lessonRows.filter((l) => l.chapterId === ch.chapterId),
@@ -118,7 +133,8 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       ...course,
       chapters,
-      userEnrolled: enrolledCourse.length > 0,
+      userEnrolled: enrolledCourse.length > 0 || isProSingle,
+      userIsPro: isProSingle,
       courseEnrolledInfo: enrolledCourse[0],
       completedLessonIds: completed.map((c) => c.lessonId),
     });
@@ -267,6 +283,20 @@ export async function GET(req: NextRequest) {
     }
   }
 
+  // Pro subscription bypasses every paywall — treat the learner as
+  // already-enrolled in every tier-gated course so the listing shows
+  // no Lock badges. The actual enrolment row is still created on first
+  // visit by /api/enroll-course; this is just the visibility hint.
+  const userEmail = session?.user?.email;
+  const [userRow] = userEmail
+    ? await db
+        .select({ subscription: usersTable.subscription })
+        .from(usersTable)
+        .where(eq(usersTable.email, userEmail))
+        .limit(1)
+    : [];
+  const isPro = hasProSubscription(userRow?.subscription);
+
   const enriched = result.map((c) => {
     const chapterCount = chapterCounts.get(c.courseId) ?? 0;
     const tier = getAccessTier(c.level);
@@ -276,7 +306,7 @@ export async function GET(req: NextRequest) {
       chapterCount,
       effectiveUnlockCost: effectiveUnlockCost(c.level, c.unlockCost, chapterCount),
       effectivePriceVnd: effectivePriceVnd(c.level, c.priceVnd, c.courseId),
-      enrolled: enrolledIds.has(c.courseId),
+      enrolled: enrolledIds.has(c.courseId) || isPro,
     };
   });
 

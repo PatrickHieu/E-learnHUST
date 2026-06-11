@@ -280,9 +280,15 @@ async function main() {
 
     // 6) Update the user's running point total.
     if (userXp > 0) {
+      // points = spendable balance; lifetimePoints = total ever
+       // earned (leaderboard rank). Seed both to the same value so
+      // fake users land with a coherent state.
       await db
         .update(usersTable)
-        .set({ points: sql`${userXp}` })
+        .set({
+          points: sql`${userXp}`,
+          lifetimePoints: sql`${userXp}`,
+        })
         .where(eq(usersTable.email, email));
     }
   }

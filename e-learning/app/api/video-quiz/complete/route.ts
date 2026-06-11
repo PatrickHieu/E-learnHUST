@@ -122,9 +122,14 @@ export async function POST(req: NextRequest) {
           ),
         );
 
+      // Increment both balance + lifetime so checkpoint XP also
+       // contributes to the leaderboard's never-decreasing total.
       await db
         .update(usersTable)
-        .set({ points: sql`${usersTable.points} + ${xpEarned}` })
+        .set({
+          points: sql`${usersTable.points} + ${xpEarned}`,
+          lifetimePoints: sql`${usersTable.lifetimePoints} + ${xpEarned}`,
+        })
         .where(eq(usersTable.email, userEmail));
     }
   }

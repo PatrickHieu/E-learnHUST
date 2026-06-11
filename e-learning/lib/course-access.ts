@@ -11,6 +11,15 @@ export function getAccessTier(level: string | null | undefined): AccessTier {
   return "free";
 }
 
+// Single source of truth for "does this learner hold the unlimited
+// subscription". Pro users skip every paywall (star + paid). Anything
+// other than the literal 'pro' string is treated as free tier.
+export function hasProSubscription(
+  subscription: string | null | undefined,
+): boolean {
+  return subscription === "pro";
+}
+
 // Star cost rule for intermediate courses: 50 stars per chapter, with a
 // minimum of 50 so a single-chapter course isn't free. Admin override
 // (course.unlockCost > 0) always wins.
