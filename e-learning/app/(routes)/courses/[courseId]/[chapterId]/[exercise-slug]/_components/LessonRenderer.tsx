@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import ContentSection from "./ContentSection";
 import CodeEditor from "./CodeEditor";
+import PythonRunner from "./PythonRunner";
+import CppRunner from "./CppRunner";
 import VideoLesson from "./VideoLesson";
 import PdfLesson from "./PdfLesson";
 import QuizLesson from "./QuizLesson";
@@ -121,6 +123,49 @@ function LessonRenderer({
 
   if (lesson.type === "exercise") {
     const exerciseContent = lesson.content as ExerciseLessonContent;
+
+    // Dispatch by editorType so each language uses the right runtime:
+    // - python → Pyodide WASM in a Web Worker (in-browser, ~10MB first
+    //   load then cached forever)
+    // - c / cpp → Monaco + server-side Judge0 (set JUDGE0_RAPIDAPI_KEY
+    //   in env; see app/api/code/run/route.ts)
+    // - anything else → Sandpack handles HTML/CSS/JS family templates
+    //   with a live iframe preview
+    const exerciseLesson = {
+      id: lesson.id,
+      title: lesson.title,
+      content: exerciseContent,
+    };
+    const t = (editorType ?? "").toLowerCase();
+    let editorEl: React.ReactNode;
+    if (t === "python") {
+      editorEl = (
+        <PythonRunner
+          lesson={exerciseLesson}
+          isCompleted={isCompleted}
+          refreshData={refreshData}
+        />
+      );
+    } else if (t === "c" || t === "cpp" || t === "c++") {
+      editorEl = (
+        <CppRunner
+          lesson={exerciseLesson}
+          language={t === "c" ? "c" : "cpp"}
+          isCompleted={isCompleted}
+          refreshData={refreshData}
+        />
+      );
+    } else {
+      editorEl = (
+        <CodeEditor
+          lesson={exerciseLesson}
+          editorType={editorType}
+          isCompleted={isCompleted}
+          refreshData={refreshData}
+        />
+      );
+    }
+
     // SplitterLayout's horizontal split collapses both panes into unusable
     // widths on phones. Below md we stack: prompt above, editor below.
     if (isMobile) {
@@ -129,14 +174,7 @@ function LessonRenderer({
           <div className="border-b-4 border-zinc-800">
             <ContentSection title={lesson.title} content={exerciseContent} loading={loading} />
           </div>
-          <div className="min-h-[60vh]">
-            <CodeEditor
-              lesson={{ id: lesson.id, title: lesson.title, content: exerciseContent }}
-              editorType={editorType}
-              isCompleted={isCompleted}
-              refreshData={refreshData}
-            />
-          </div>
+          <div className="min-h-[60vh]">{editorEl}</div>
         </div>
       );
     }
@@ -145,14 +183,7 @@ function LessonRenderer({
         <div className="h-full overflow-auto">
           <ContentSection title={lesson.title} content={exerciseContent} loading={loading} />
         </div>
-        <div className="h-full">
-          <CodeEditor
-            lesson={{ id: lesson.id, title: lesson.title, content: exerciseContent }}
-            editorType={editorType}
-            isCompleted={isCompleted}
-            refreshData={refreshData}
-          />
-        </div>
+        <div className="h-full">{editorEl}</div>
       </SplitterLayout>
     );
   }

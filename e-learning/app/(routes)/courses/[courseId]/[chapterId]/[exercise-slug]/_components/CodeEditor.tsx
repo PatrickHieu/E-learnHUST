@@ -31,14 +31,21 @@ type Props = {
     refreshData?: () => void,
 }
 
-type ValidTemplate = 'react' | 'vue' | 'svelte' | 'vanilla';
+// Sandpack only handles JavaScript-family templates with a working
+// preview pane. `static` is what HTML/CSS/JS courses ship — it runs
+// the files directly in an iframe with no transpilation step. The
+// other JS templates are kept for advanced courses that opt in.
+type ValidTemplate = 'static' | 'vanilla' | 'react' | 'vue' | 'svelte';
 
 const getValidTemplate = (editorType?: string | null): ValidTemplate => {
-    const validTemplates: ValidTemplate[] = ['react', 'vue', 'svelte', 'vanilla'];
+    const validTemplates: ValidTemplate[] = ['static', 'vanilla', 'react', 'vue', 'svelte'];
     if (editorType && validTemplates.includes(editorType as ValidTemplate)) {
         return editorType as ValidTemplate;
     }
-    return 'react';
+    // `static` is the safest default — works for raw HTML/CSS/JS without
+    // expecting a framework setup. Previously this fell back to 'react'
+    // which crashed any HTML/CSS lesson missing JSX boilerplate.
+    return 'static';
 }
 
 type CodeEditorChildrenProps = {
