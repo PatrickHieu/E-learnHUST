@@ -1,47 +1,32 @@
 "use client"
-import React, { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import React, { useContext } from 'react'
 import CourseDetailBanner from './_components/CourseDetailBanner';
-import axios from 'axios';
-import { Course } from '../_components/CourseList';
 import CourseChapter from './_components/CourseChapter';
 import CourseStatus from './_components/CourseStatus';
 import Upgrade from '../../dashboard/_components/Upgrade';
+import { CourseDataContext } from './CourseDataContext';
 
 
 function CourseDetail() {
-
-    const { courseId } = useParams();
-    const [CourseDetail, setCourseDetail] = useState<Course>();
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        courseId && GetCourseDetail();
-    }, [courseId])
-
-
-    const GetCourseDetail = async () => {
-        setLoading(true);
-        const result = await axios.get('/api/course?courseId=' + courseId);
-        console.log(result.data);
-        setCourseDetail(result?.data);
-        setLoading(false);
-    }
+    // Course payload lives on the [courseId]/layout.tsx context now —
+    // a single fetch shared by this landing page and every lesson
+    // page under it.
+    const { courseDetail, loading, refreshCourseDetail } = useContext(CourseDataContext);
 
     return (
         <div>
             <CourseDetailBanner loading={loading}
-                courseDetail={CourseDetail}
-                refreshData={GetCourseDetail}
+                courseDetail={courseDetail}
+                refreshData={refreshCourseDetail}
             />
             <div className='grid grid-cols-3 p-10 md:px-24 lg:px-36 gap-7'>
                 <div className='col-span-2'>
                     <CourseChapter
                         loading={loading}
-                        courseDetail={CourseDetail} />
+                        courseDetail={courseDetail} />
                 </div>
                 <div>
-                    <CourseStatus courseDetail={CourseDetail} />
+                    <CourseStatus courseDetail={courseDetail} />
                     <Upgrade />
                 </div>
             </div>

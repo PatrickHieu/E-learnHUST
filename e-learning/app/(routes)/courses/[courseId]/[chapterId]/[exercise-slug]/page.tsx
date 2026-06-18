@@ -1,7 +1,7 @@
 "use client";
 import axios from 'axios';
 import { useParams } from 'next/navigation';
-import React, { useEffect, useState } from 'react';
+import React, { useContext, useEffect, useState } from 'react';
 import 'react-splitter-layout/lib/index.css';
 import { Button } from '@/components/ui/button';
 import Image from 'next/image';
@@ -10,6 +10,7 @@ import { Menu } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import LessonRenderer, { Lesson } from './_components/LessonRenderer';
 import LessonSidebar from './_components/LessonSidebar';
+import { CourseDataContext } from '../../CourseDataContext';
 
 type Sibling = {
   id: number,
@@ -29,34 +30,16 @@ type LessonResponse = {
   editorType: string | null,
 };
 
-type SidebarLesson = {
-  id: number,
-  slug: string,
-  title: string,
-  type: string,
-  xp: number,
-  gating?: boolean,
-};
-
-type SidebarChapter = {
-  chapterId: number,
-  name: string | null,
-  lessons: SidebarLesson[],
-};
-
-type CourseDetailResponse = {
-  courseId: number,
-  title: string,
-  chapters: SidebarChapter[],
-  completedLessonIds: number[],
-};
-
 function Playground() {
   const { courseId, chapterId } = useParams();
   const slug = useParams()['exercise-slug'];
+  // Course detail comes from [courseId]/layout.tsx context — single
+  // fetch shared with the course landing page, no re-fetch on lesson
+  // switch. Only /api/lesson runs per navigation, which is small and
+  // returns in <100ms.
+  const { courseDetail, refreshCourseDetail } = useContext(CourseDataContext);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<LessonResponse>();
-  const [courseDetail, setCourseDetail] = useState<CourseDetailResponse>();
   const [accessError, setAccessError] = useState<string | null>(null);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -84,26 +67,17 @@ function Playground() {
     }
   };
 
-  // Course detail (chapter + lesson list) is fetched separately from
-  // /api/course so the sidebar can show the whole curriculum even
-  // when /api/lesson rejects the current page with 403 (e.g., a
-  // chapter-locked deep-link).
-  const fetchCourseDetail = async () => {
-    try {
-      const result = await axios.get(`/api/course?courseId=${courseId}`);
-      setCourseDetail(result.data);
-    } catch (err) {
-      console.error('Error fetching course detail:', err);
-    }
+  // After a Mark Completed click, both the local lesson payload AND
+  // the shared course detail need to refresh: the lesson one for the
+  // sidebar's "current" completion state, the course one for the
+  // green check-mark on every chapter / lesson row of the sidebar.
+  const refreshAll = async () => {
+    await Promise.all([fetchLesson(), refreshCourseDetail()]);
   };
 
   useEffect(() => {
     fetchLesson();
   }, [courseId, chapterId, slug]);
-
-  useEffect(() => {
-    fetchCourseDetail();
-  }, [courseId, data?.completedLessonIds?.length]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -125,10 +99,11 @@ function Playground() {
 
   const isCompleted = !!(data?.lesson && data?.completedLessonIds?.includes(data.lesson.id));
 
-  // Sidebar props derived from courseDetail. Completion list comes
-  // from /api/lesson (most up-to-date after a Mark Completed), with
-  // course detail as a fallback for first paint.
-  const sidebarChapters: SidebarChapter[] = courseDetail?.chapters ?? [];
+  // Sidebar props derived from the layout-cached courseDetail.
+  // Completion list comes from /api/lesson when it has resolved
+  // (freshest after Mark Completed), with the course payload as the
+  // fallback for first paint.
+  const sidebarChapters = courseDetail?.chapters ?? [];
   const sidebarCompletedIds: number[] =
     data?.completedLessonIds ?? courseDetail?.completedLessonIds ?? [];
   const sidebarProps = {
@@ -196,7 +171,7 @@ function Playground() {
             editorType={data?.editorType}
             isCompleted={isCompleted}
             loading={loading}
-            refreshData={fetchLesson}
+            refreshData={refreshAll}
             completedCheckpointIndexes={data?.completedCheckpointIndexes ?? []}
           />
         </div>
