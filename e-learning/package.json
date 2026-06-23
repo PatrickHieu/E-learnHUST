@@ -14,6 +14,7 @@
     "seed:fake-payments": "tsx scripts/seed-fake-payments.ts",
     "bootstrap:admin": "tsx scripts/bootstrap-admin.ts",
     "bootstrap:test-accounts": "tsx scripts/bootstrap-test-accounts.ts",
+    "migrate:role-rename": "tsx scripts/migrate-librarian-to-instructor.ts",
     "seed:language-demos": "tsx scripts/seed-language-demos.ts"
   },
   "dependencies": {

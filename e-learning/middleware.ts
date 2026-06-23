@@ -10,7 +10,7 @@ import { auth } from "@/auth";
 //   sign-in silently fails with no error in the browser.
 // - /api/auth/register (custom sign-up endpoint) is reached by users
 //   who aren't logged in yet, so it's public for the same reason.
-// - /admin/* requires admin or librarian role
+// - /admin/* requires admin or instructor role
 // - /admin/users/* requires admin specifically
 // - everything else needs a session
 //
@@ -39,7 +39,7 @@ export default async function middleware(req: NextRequest) {
       if (role !== "admin") {
         return NextResponse.redirect(new URL("/", req.url));
       }
-    } else if (role !== "admin" && role !== "librarian") {
+    } else if (role !== "admin" && role !== "instructor") {
       return NextResponse.redirect(new URL("/", req.url));
     }
   }

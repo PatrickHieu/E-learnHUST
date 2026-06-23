@@ -24,8 +24,8 @@ function Header() {
   // checkRole() consults server-side. Staff get a Shield-iconed
   // shortcut to /admin alongside their normal Dashboard link.
   const role = session?.user?.role;
-  const isStaff = role === "admin" || role === "librarian";
-  const staffLabel = role === "admin" ? "Admin" : "Librarian";
+  const isStaff = role === "admin" || role === "instructor";
+  const staffLabel = role === "admin" ? "Admin" : "Instructor";
 
   return (
     <div className="p-4 max-w-7xl mx-auto flex justify-between items-center w-full">

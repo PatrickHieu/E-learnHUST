@@ -24,7 +24,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   // JWT strategy keeps everything stateless — no sessions table needed
   // in Postgres, no second round-trip per request. The user's id +
   // role land on the token via the callbacks below.
-  session: { strategy: "jwt" },
+  //
+  // Defense finding (f): the default 30-day session is too long for a
+  // role-bearing token we can't revoke. Cap at 48h so a demoted admin
+  // can never linger more than two days; UI uses fetch /api/user
+  // before every sensitive admin action (see lib/sensitive-auth.ts)
+  // to additionally re-read the latest role straight from the DB.
+  session: {
+    strategy: "jwt",
+    maxAge: 60 * 60 * 48,      // 48 hours
+    updateAge: 60 * 60 * 12,   // refresh sliding window every 12h
+  },
   pages: {
     signIn: "/sign-in",
   },

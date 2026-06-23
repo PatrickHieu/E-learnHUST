@@ -56,29 +56,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const existing = await db
-    .select({ id: EnrolledCourseTable.id })
-    .from(EnrolledCourseTable)
-    .where(
-      and(
-        eq(EnrolledCourseTable.userId, userId),
-        eq(EnrolledCourseTable.courseId, courseId),
-      ),
-    )
-    .limit(1);
-  if (existing.length > 0) {
-    return NextResponse.json({ alreadyEnrolled: true }, { status: 200 });
-  }
-
   // Server is the source of truth for the price; ignore any client
   // value to prevent a tampered "I paid 1.000₫" replay.
   const amountVnd = effectivePriceVnd(course.level, course.priceVnd, course.courseId);
 
-  await db.insert(EnrolledCourseTable).values({
-    userId,
-    courseId,
-    xpEarned: 0,
-  });
+  // Race-safety (finding b): atomic insert via the unique constraint
+  // on (userId, courseId). Only the winning request records a
+  // payment, so a double-click can't bill twice.
+  const inserted = await db
+    .insert(EnrolledCourseTable)
+    .values({ userId, courseId, xpEarned: 0 })
+    .onConflictDoNothing({
+      target: [EnrolledCourseTable.userId, EnrolledCourseTable.courseId],
+    })
+    .returning();
+
+  if (inserted.length === 0) {
+    return NextResponse.json({ alreadyEnrolled: true }, { status: 200 });
+  }
 
   await db.insert(PaymentsTable).values({
     userId,

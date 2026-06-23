@@ -64,7 +64,22 @@ export async function POST(req: NextRequest) {
   // wait=true makes Judge0 run synchronously and return the result in
   // a single round trip. Saves us a polling loop and stays well under
   // the 10s Vercel edge timeout for typical student submissions.
+  //
+  // Defense finding (g): explicit resource limits stop a runaway
+  // student program from chewing through the free-tier quota in one
+  // submission, or from holding the route hostage for 10s while we
+  // wait on Judge0's defaults.
+  //   cpu_time_limit  — seconds of actual CPU the program may use
+  //   wall_time_limit — seconds of wall-clock before the runner kills it
+  //   memory_limit    — kilobytes of RSS allowed (256MB here)
+  //   stack_limit     — kilobytes of stack (64MB)
+  //   max_processes_and_or_threads — fork-bomb cap
+  // Numbers are conservative for teaching exercises; tune via env
+  // (JUDGE0_CPU_TIME, JUDGE0_MEMORY_KB) if a course needs more.
   const url = `https://${JUDGE0_HOST}/submissions?base64_encoded=false&wait=true`;
+  const cpuTimeLimit = Number(process.env.JUDGE0_CPU_TIME ?? 5);
+  const wallTimeLimit = Number(process.env.JUDGE0_WALL_TIME ?? 8);
+  const memoryLimitKb = Number(process.env.JUDGE0_MEMORY_KB ?? 256_000);
   const res = await fetch(url, {
     method: "POST",
     headers: {
@@ -76,6 +91,15 @@ export async function POST(req: NextRequest) {
       language_id: languageId,
       source_code: source,
       stdin,
+      cpu_time_limit: cpuTimeLimit,
+      wall_time_limit: wallTimeLimit,
+      memory_limit: memoryLimitKb,
+      stack_limit: 64_000,
+      max_processes_and_or_threads: 16,
+      // Strip ANSI escapes from output so terminal-aware student
+      // code can't paint the UI on the way back.
+      enable_per_process_and_thread_time_limit: false,
+      enable_per_process_and_thread_memory_limit: false,
     }),
   });
 

@@ -17,31 +17,31 @@ export default function RoleToggleButton({ userId, currentRole }: Props) {
     );
   }
 
-  const isLibrarian = currentRole === "librarian";
-  const nextRole = isLibrarian ? "student" : "librarian";
+  const isInstructor = currentRole === "instructor";
+  const nextRole = isInstructor ? "student" : "instructor";
 
   return (
     <form action={setUserRoleAction.bind(null, userId, nextRole)}>
       <Button
         type="submit"
-        variant={isLibrarian ? "outline" : "default"}
+        variant={isInstructor ? "outline" : "default"}
         size="sm"
         className={
-          isLibrarian
+          isInstructor
             ? "text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
             : ""
         }
         onClick={(e) => {
           if (!confirm(
-            isLibrarian
-              ? "Revoke Librarian access from this user?"
-              : "Grant Librarian access to this user?",
+            isInstructor
+              ? "Revoke Instructor access from this user?"
+              : "Grant Instructor access to this user?",
           )) {
             e.preventDefault();
           }
         }}
       >
-        {isLibrarian ? "Revoke Librarian" : "Make Librarian"}
+        {isInstructor ? "Revoke Instructor" : "Make Instructor"}
       </Button>
     </form>
   );

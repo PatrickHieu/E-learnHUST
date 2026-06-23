@@ -9,7 +9,7 @@ import { hasAdminAccess } from "@/lib/checkRole";
 export async function deleteCourseAction(courseId: number) {
   try {
     if (!(await hasAdminAccess())) {
-      throw new Error("Forbidden: admin or librarian role required");
+      throw new Error("Forbidden: admin or instructor role required");
     }
 
     await db.delete(CoursesTable).where(eq(CoursesTable.courseId, courseId));

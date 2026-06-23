@@ -4,19 +4,21 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/config/db";
 import { usersTable } from "@/config/schema";
-import { checkRole } from "@/lib/checkRole";
+import { requireFreshRole } from "@/lib/sensitive-auth";
 
-// Promote / demote between Librarian and Student by writing to
+// Promote / demote between Instructor and Student by writing to
 // usersTable.role. Admin-only — only an admin can grant the
-// librarian role (Phase 2 spec). Accepts the numeric users.id as a
+// instructor role (Phase 2 spec). Accepts the numeric users.id as a
 // string so the form field carries the same value the URL uses.
+//
+// Defense finding (f): role grants re-read the caller's role from
+// the DB (not the JWT) so a freshly demoted admin can't keep handing
+// out instructor rights with a stale token.
 export async function setUserRoleAction(
   userId: string,
-  role: "librarian" | "student",
+  role: "instructor" | "student",
 ) {
-  if (!(await checkRole("admin"))) {
-    throw new Error("Forbidden: admin only");
-  }
+  await requireFreshRole("admin");
 
   const numericId = Number(userId);
   if (!Number.isFinite(numericId)) {

@@ -5,7 +5,7 @@ import { db } from "../config/db";
 import { usersTable } from "../config/schema";
 
 // One-shot creator for the three role test accounts (admin /
-// librarian / student). Idempotent: if any email already exists,
+// instructor / student). Idempotent: if any email already exists,
 // the row's password is reset and the role is enforced — so
 // re-running after a manual change always restores known-good
 // credentials for QA.
@@ -15,15 +15,15 @@ import { usersTable } from "../config/schema";
 type TestAccount = {
   name: string;
   email: string;
-  role: "admin" | "librarian" | "student";
+  role: "admin" | "instructor" | "student";
 };
 
 const SHARED_PASSWORD = "Password1!";
 
 const ACCOUNTS: TestAccount[] = [
-  { name: "Admin Tester",     email: "admin@codeblock.test",     role: "admin" },
-  { name: "Librarian Tester", email: "librarian@codeblock.test", role: "librarian" },
-  { name: "Student Tester",   email: "student@codeblock.test",   role: "student" },
+  { name: "Admin Tester",      email: "admin@codeblock.test",      role: "admin" },
+  { name: "Instructor Tester", email: "instructor@codeblock.test", role: "instructor" },
+  { name: "Student Tester",    email: "student@codeblock.test",    role: "student" },
 ];
 
 async function main() {

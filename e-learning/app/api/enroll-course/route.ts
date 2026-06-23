@@ -22,24 +22,6 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Idempotency: if the user is already enrolled in this course, return the
-  // existing row instead of creating a duplicate enrollment. We do this
-  // before any star deduction so a double-click never charges twice.
-  const existing = await db
-    .select()
-    .from(EnrolledCourseTable)
-    .where(
-      and(
-        eq(EnrolledCourseTable.userId, userId),
-        eq(EnrolledCourseTable.courseId, courseId),
-      ),
-    )
-    .limit(1);
-
-  if (existing.length > 0) {
-    return NextResponse.json({ alreadyEnrolled: true, record: existing[0] });
-  }
-
   const [course] = await db
     .select({ unlockCost: CoursesTable.unlockCost })
     .from(CoursesTable)
@@ -52,11 +34,32 @@ export async function POST(req: NextRequest) {
 
   const unlockCost = course.unlockCost ?? 0;
 
-  // For paid courses: atomic check-and-deduct. The conditional WHERE means
-  // the row only updates if the user actually has enough stars — no
-  // transaction needed (neon-http doesn't support them) and no race window
-  // where two concurrent enrollments could both succeed on insufficient
-  // balance.
+  // Defense finding (b): unique constraint on (userId, courseId)
+  // means insert wins exactly once across racing requests. Only the
+  // winner runs the deduction afterwards — guarantees no double-
+  // charge from concurrent clicks.
+  const inserted = await db
+    .insert(EnrolledCourseTable)
+    .values({ userId, courseId, xpEarned: 0 })
+    .onConflictDoNothing({
+      target: [EnrolledCourseTable.userId, EnrolledCourseTable.courseId],
+    })
+    .returning();
+
+  if (inserted.length === 0) {
+    const [existing] = await db
+      .select()
+      .from(EnrolledCourseTable)
+      .where(
+        and(
+          eq(EnrolledCourseTable.userId, userId),
+          eq(EnrolledCourseTable.courseId, courseId),
+        ),
+      )
+      .limit(1);
+    return NextResponse.json({ alreadyEnrolled: true, record: existing });
+  }
+
   if (unlockCost > 0) {
     const deducted = await db
       .update(usersTable)
@@ -70,6 +73,16 @@ export async function POST(req: NextRequest) {
       .returning({ points: usersTable.points });
 
     if (deducted.length === 0) {
+      // Roll the enrolment back so we don't gift a paid course on a
+      // depleted balance.
+      await db
+        .delete(EnrolledCourseTable)
+        .where(
+          and(
+            eq(EnrolledCourseTable.userId, userId),
+            eq(EnrolledCourseTable.courseId, courseId),
+          ),
+        );
       return NextResponse.json(
         {
           error: "Insufficient stars",
@@ -80,14 +93,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  const [record] = await db
-    .insert(EnrolledCourseTable)
-    .values({
-      courseId,
-      userId,
-      xpEarned: 0,
-    })
-    .returning();
-
-  return NextResponse.json({ record, starsSpent: unlockCost });
+  return NextResponse.json({ record: inserted[0], starsSpent: unlockCost });
 }

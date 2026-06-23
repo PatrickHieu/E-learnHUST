@@ -1,4 +1,4 @@
-import { integer, json, pgTable, varchar, timestamp } from "drizzle-orm/pg-core";
+import { integer, json, pgTable, unique, varchar, timestamp } from "drizzle-orm/pg-core";
 
 
 export const usersTable = pgTable("users", {
@@ -9,7 +9,7 @@ export const usersTable = pgTable("users", {
     // rows (and any future OAuth-only flows) can sit without one — the
     // sign-in endpoint refuses to authenticate any row where this is NULL.
     passwordHash: varchar({ length: 255 }),
-    // 'student' | 'librarian' | 'admin'. Replaces Clerk publicMetadata.role
+    // 'student' | 'instructor' | 'admin'. Replaces Clerk publicMetadata.role
     // as the single source of truth for access gates.
     role: varchar({ length: 16 }).default("student").notNull(),
     // Spendable star balance — incremented on lesson completion,
@@ -51,13 +51,21 @@ export const CourseChapterTable = pgTable("courseChapters", {
     desc: varchar(),
 });
 
+// (userId, courseId) is the natural composite key — a learner only
+// enrols once per course. The unique constraint defends against
+// race conditions where two near-simultaneous unlock requests slip
+// past a SELECT-then-INSERT check (Neon's HTTP driver has no
+// transactions). Combined with onConflictDoNothing() at the insert
+// site it means a double-click can never double-charge stars.
 export const EnrolledCourseTable = pgTable('enrolledCourse', {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     userId: varchar(),
     courseId: integer(),
     enrollDate: timestamp().defaultNow(),
-    xpEarned: integer()
-})
+    xpEarned: integer(),
+}, (t) => [
+    unique('enrolled_course_user_course_unique').on(t.userId, t.courseId),
+]);
 
 // Multi-modal lessons (Phase 2). A chapter is an ordered sequence of lessons
 // whose `type` decides how the student client renders the body and how the
@@ -75,6 +83,11 @@ export const LessonsTable = pgTable('lessons', {
     content: json().notNull(),
 });
 
+// (userId, lessonId) is the natural composite key — a learner only
+// completes a given lesson once. Unique constraint defends against
+// double-click double-credit on Mark Completed and against the
+// equivalent server-side race in the run-up. Insert sites use
+// onConflictDoNothing() so the duplicate just no-ops.
 export const CompletedLessonTable = pgTable('completedLesson', {
     id: integer().primaryKey().generatedAlwaysAsIdentity(),
     userId: varchar().notNull(),
@@ -82,7 +95,9 @@ export const CompletedLessonTable = pgTable('completedLesson', {
     chapterId: integer().notNull(),
     lessonId: integer().notNull(),
     completedAt: timestamp().defaultNow(),
-});
+}, (t) => [
+    unique('completed_lesson_user_lesson_unique').on(t.userId, t.lessonId),
+]);
 
 // Per-checkpoint completion for in-video quizzes. A video lesson's
 // inVideoQuizzes array is index-stable; checkpointIndex refers to that
@@ -97,7 +112,13 @@ export const CompletedVideoQuizTable = pgTable('completedVideoQuiz', {
     lessonId: integer().notNull(),
     checkpointIndex: integer().notNull(),
     completedAt: timestamp().defaultNow(),
-});
+}, (t) => [
+    // Same defense as the other two — a learner can only pass any
+    // single checkpoint once.
+    unique('completed_video_quiz_user_lesson_idx_unique').on(
+        t.userId, t.lessonId, t.checkpointIndex,
+    ),
+]);
 
 export type LessonType = 'video' | 'pdf' | 'exercise' | 'quiz';
 
