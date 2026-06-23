@@ -90,21 +90,61 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Deduct, enrol, record the payment row. We don't wrap in a real
-  // transaction because Neon's HTTP driver doesn't expose one — but
-  // failures partway through leave a deductible row + missing
-  // enrolment, which the cron / next request can clean up later if
-  // needed. For Phase 5 demo data this is acceptable.
-  await db
+  // Defense finding (b): the previous flow deducted stars BEFORE
+  // inserting the enrolment row. With Neon's HTTP driver (no
+  // transactions) two near-simultaneous clicks could pass the
+  // balance check, both deduct, and only one insert succeed — net
+  // result: double charge for one enrolment.
+  //
+  // New order: INSERT … ON CONFLICT DO NOTHING first. The unique
+  // constraint on (userId, courseId) means exactly one request wins.
+  // Only the winner runs the deduction + payment record.
+  const inserted = await db
+    .insert(EnrolledCourseTable)
+    .values({ userId, courseId, xpEarned: 0 })
+    .onConflictDoNothing({
+      target: [EnrolledCourseTable.userId, EnrolledCourseTable.courseId],
+    })
+    .returning();
+
+  if (inserted.length === 0) {
+    // The race lost. Either an earlier request already enrolled
+    // (and charged) or the user double-clicked. Either way, no
+    // additional star spend.
+    return NextResponse.json({ alreadyEnrolled: true }, { status: 200 });
+  }
+
+  // Atomic conditional deduction: only deducts if the learner still
+  // has enough stars. Combined with the winning insert above, a
+  // double-click can never bill twice.
+  const deducted = await db
     .update(usersTable)
     .set({ points: sql`${usersTable.points} - ${cost}` })
-    .where(eq(usersTable.email, userEmail));
+    .where(
+      and(
+        eq(usersTable.email, userEmail),
+        sql`${usersTable.points} >= ${cost}`,
+      ),
+    )
+    .returning({ points: usersTable.points });
 
-  await db.insert(EnrolledCourseTable).values({
-    userId,
-    courseId,
-    xpEarned: 0,
-  });
+  if (deducted.length === 0) {
+    // Defensive: balance was depleted between the check above and
+    // the deduction. Roll the enrolment back so the learner isn't
+    // gifted a course they didn't pay for.
+    await db
+      .delete(EnrolledCourseTable)
+      .where(
+        and(
+          eq(EnrolledCourseTable.userId, userId),
+          eq(EnrolledCourseTable.courseId, courseId),
+        ),
+      );
+    return NextResponse.json(
+      { error: "Insufficient stars at deduction time" },
+      { status: 402 },
+    );
+  }
 
   await db.insert(PaymentsTable).values({
     userId,

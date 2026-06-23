@@ -20,7 +20,7 @@ export default async function AdminLayout({
             <aside className="w-64 border-r border-zinc-200 dark:border-zinc-800 p-6 flex flex-col gap-6 bg-white dark:bg-zinc-950">
                 <div>
                     <div className="text-xs uppercase tracking-widest text-zinc-500">
-                        {isAdmin ? "Admin" : "Librarian"}
+                        {isAdmin ? "Admin" : "Instructor"}
                     </div>
                     <div className="text-xl font-semibold mt-1">Code Block</div>
                 </div>
@@ -71,7 +71,7 @@ export default async function AdminLayout({
                     <div className="flex items-center gap-3 px-3">
                         <UserAvatar />
                         <span className="text-xs text-zinc-500">
-                            {isAdmin ? "Admin" : "Librarian"}
+                            {isAdmin ? "Admin" : "Instructor"}
                         </span>
                     </div>
                 </div>

@@ -71,12 +71,18 @@ describe("validateExerciseSubmission", () => {
     expect(result.pass).toBe(true);
   });
 
-  it("auto-passes when the lesson regex is malformed (don't lock students out)", () => {
+  it("returns LESSON_MISCONFIGURED when the lesson regex won't compile", () => {
+    // Defense finding (a): a malformed regex must NOT auto-pass.
+    // Letting it through turned a content-authoring bug into free XP
+    // for every submission, including an empty one.
     const result = validateExerciseSubmission(
       exercise({ regex: "[unclosed" }),
       "anything",
     );
-    expect(result.pass).toBe(true);
+    expect(result.pass).toBe(false);
+    if (!result.pass) {
+      expect(result.code).toBe("LESSON_MISCONFIGURED");
+    }
   });
 
   it("requires submission to contain the expectedOutput substring", () => {

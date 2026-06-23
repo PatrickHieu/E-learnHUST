@@ -9,7 +9,7 @@ import { usersTable } from "@/config/schema";
 // /sign-up page form, write a row with a bcrypt hash, and the client
 // follows up with a signIn() call to start a session.
 //
-// Default role is 'student' — admin/librarian must be elevated via
+// Default role is 'student' — admin/instructor must be elevated via
 // the existing /admin/users RoleToggleButton (now writing to
 // usersTable.role instead of Clerk publicMetadata.role).
 export async function POST(req: NextRequest) {

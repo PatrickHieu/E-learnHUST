@@ -19,7 +19,7 @@ import RoleToggleButton from "./RoleToggleButton";
 const ROLE_COLOR: Record<string, string> = {
   admin:
     "bg-red-100 text-red-700 border-red-200 dark:bg-red-500/20 dark:text-red-300 dark:border-red-500/40",
-  librarian:
+  instructor:
     "bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-300 dark:border-blue-500/40",
   student:
     "bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-700/40 dark:text-zinc-300 dark:border-zinc-600",

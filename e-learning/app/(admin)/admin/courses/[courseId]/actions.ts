@@ -22,7 +22,7 @@ function slugify(s: string): string {
 
 async function requireAdmin() {
   if (!(await hasAdminAccess())) {
-    throw new Error("Forbidden: admin or librarian role required");
+    throw new Error("Forbidden: admin or instructor role required");
   }
 }
 

@@ -9,7 +9,7 @@ import { hasAdminAccess } from "@/lib/checkRole";
 
 export async function createCourseAction(formData: FormData) {
   if (!(await hasAdminAccess())) {
-    throw new Error("Forbidden: admin or librarian role required");
+    throw new Error("Forbidden: admin or instructor role required");
   }
 
   const title = formData.get("title") as string;

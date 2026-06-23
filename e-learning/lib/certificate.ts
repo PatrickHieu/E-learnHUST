@@ -46,6 +46,23 @@ async function fetchAsArrayBuffer(url: string): Promise<ArrayBuffer> {
   return res.arrayBuffer();
 }
 
+// Filename slug for the saved certificate. Pulled out as a pure
+// function so it's testable without spinning up jsPDF or downloading
+// the font. Strips Vietnamese diacritics, lower-cases, collapses
+// non-alphanumeric runs into dashes, trims dashes, and caps at 60
+// characters. Empty / all-symbol titles fall back to "course".
+export function certificateSlug(courseTitle: string): string {
+  return (
+    courseTitle
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 60) || "course"
+  );
+}
+
 // btoa() chokes on long strings if you pass the whole buffer at once,
 // so chunk into 32KB slices before joining.
 function arrayBufferToBase64(buffer: ArrayBuffer): string {
@@ -192,13 +209,5 @@ export async function downloadCertificatePdf(
     align: "center",
   });
 
-  // Filename slug: strip diacritics so the filename stays ASCII-safe.
-  const slug = courseTitle
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "")
-    .slice(0, 60);
-  doc.save(`certificate-${slug || "course"}.pdf`);
+  doc.save(`certificate-${certificateSlug(courseTitle)}.pdf`);
 }

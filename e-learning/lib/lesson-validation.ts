@@ -2,7 +2,7 @@ import type { ExerciseLessonContent, QuizLessonContent } from "@/config/schema";
 
 export type ValidationResult =
   | { pass: true }
-  | { pass: false; reason: string };
+  | { pass: false; reason: string; code?: "LESSON_MISCONFIGURED" };
 
 // The seeded exercise regex patterns use Perl-style inline flag groups like
 // "(?i)<title>...". JavaScript's RegExp doesn't accept those inline — flags
@@ -37,15 +37,24 @@ export function validateExerciseSubmission(
   }
 
   if (content.regex) {
+    let re: RegExp;
     try {
-      const re = compileRegex(content.regex);
-      if (!re.test(submission)) {
-        return { pass: false, reason: "Your code doesn't match the expected pattern yet" };
-      }
+      re = compileRegex(content.regex);
     } catch {
-      // Malformed regex on the lesson — let the submission through rather
-      // than locking the user out of an unsolvable exercise.
-      return { pass: true };
+      // Defense finding (a): a malformed regex used to auto-pass the
+      // submission, which turned a content-authoring bug into free XP.
+      // Now we surface it as a misconfiguration so the API can refuse
+      // to mark the lesson complete and the admin gets a chance to
+      // fix the pattern.
+      return {
+        pass: false,
+        code: "LESSON_MISCONFIGURED",
+        reason:
+          "This exercise has an invalid validation regex. Please contact the admin.",
+      };
+    }
+    if (!re.test(submission)) {
+      return { pass: false, reason: "Your code doesn't match the expected pattern yet" };
     }
   }
 
