@@ -24,10 +24,16 @@ function NativeVideoWithCheckpoints({
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
+  // Filter out checkpoints with non-positive timestamps. The admin
+  // form's default value is 0 — an unsaved/empty field shouldn't
+  // trigger the moment the video loads. Sort the rest by timestamp
+  // so .find() reliably returns the earliest uncompleted one when
+  // the student scrubs past several markers at once.
   const ordered: CheckpointWithIndex[] = React.useMemo(
     () =>
       checkpoints
         .map((c, originalIndex) => ({ ...c, originalIndex }))
+        .filter((c) => c.timestamp > 0)
         .sort((a, b) => a.timestamp - b.timestamp),
     [checkpoints],
   );

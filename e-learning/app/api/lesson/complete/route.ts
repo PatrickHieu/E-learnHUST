@@ -5,6 +5,7 @@ import { db } from "@/config/db";
 import {
   CompletedLessonTable,
   CourseChapterTable,
+  CoursesTable,
   EnrolledCourseTable,
   LessonsTable,
   usersTable,
@@ -17,6 +18,7 @@ import {
   validateQuizSubmission,
 } from "@/lib/lesson-validation";
 import { isChapterUnlocked, isLessonGating } from "@/lib/chapter-gating";
+import { getAccessTier, hasProSubscription } from "@/lib/course-access";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -48,10 +50,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Lesson not found" }, { status: 404 });
   }
 
-  // Defense finding (c): the spec's "2.3.2 prerequisites" require the
-  // learner to actually be enrolled in the course AND the chapter to
-  // be unlocked. The Mark Completed UI never lets you in without
-  // those, but a raw POST could — so check both server-side here.
+  // Defense finding (c) follow-up: the spec's "2.3.2 prerequisites"
+  // require an enrolment row, but the original strict check blocked
+  // valid completion paths the project actually relies on:
+  //   - Pro subscribers don't enrol per-course (they bypass paywalls);
+  //   - admins / instructors test their own courses without enrolling;
+  //   - free-tier courses auto-enrol on first lesson view.
+  // For those cases we now auto-create the enrolment row instead of
+  // rejecting. Tier-locked courses (star / paid) still require a real
+  // enrolment row for ordinary students — drive-by POSTs on those
+  // continue to get a 403.
   const [enrolment] = await db
     .select({ id: EnrolledCourseTable.id })
     .from(EnrolledCourseTable)
@@ -62,11 +70,38 @@ export async function POST(req: NextRequest) {
       ),
     )
     .limit(1);
+
   if (!enrolment) {
-    return NextResponse.json(
-      { error: "Not enrolled in this course" },
-      { status: 403 },
-    );
+    const [me] = await db
+      .select({ role: usersTable.role, subscription: usersTable.subscription })
+      .from(usersTable)
+      .where(eq(usersTable.email, userEmail))
+      .limit(1);
+    const [course] = await db
+      .select({ level: CoursesTable.level })
+      .from(CoursesTable)
+      .where(eq(CoursesTable.courseId, lesson.courseId))
+      .limit(1);
+
+    const isPrivileged =
+      me?.role === "admin" || me?.role === "instructor";
+    const isPro = hasProSubscription(me?.subscription);
+    const isFreeCourse = getAccessTier(course?.level) === "free";
+
+    if (!isPrivileged && !isPro && !isFreeCourse) {
+      return NextResponse.json(
+        { error: "Not enrolled in this course" },
+        { status: 403 },
+      );
+    }
+
+    // Auto-enrol — same shape as POST /api/enroll-course. Uses the
+    // no-target onConflictDoNothing so the call survives whether or
+    // not the unique constraint migration has been applied.
+    await db
+      .insert(EnrolledCourseTable)
+      .values({ userId, courseId: lesson.courseId, xpEarned: 0 })
+      .onConflictDoNothing();
   }
 
   // Chapter-gate check uses the same helper the client renders the
@@ -160,11 +195,26 @@ export async function POST(req: NextRequest) {
 
   const xpEarned = lesson.xp ?? 0;
 
-  // Defense finding (b): collapse SELECT-then-INSERT into an atomic
-  // INSERT … ON CONFLICT DO NOTHING. The unique constraint on
-  // (userId, lessonId) means a race can never double-credit XP —
-  // exactly one row inserts; the other request's insert is a no-op
-  // and we treat it as alreadyCompleted.
+  // Defense finding (b) follow-up: same reason as in /api/enroll-
+  // course — the targeted `.onConflictDoNothing({ target: [...] })`
+  // throws on Postgres unless the matching unique index is already
+  // deployed. We SELECT-first to dedupe the common case (double-
+  // click), then INSERT with no-target conflict handling so the
+  // call survives whether or not the migration has been applied.
+  const [preCompleted] = await db
+    .select()
+    .from(CompletedLessonTable)
+    .where(
+      and(
+        eq(CompletedLessonTable.userId, userId),
+        eq(CompletedLessonTable.lessonId, lessonId),
+      ),
+    )
+    .limit(1);
+  if (preCompleted) {
+    return NextResponse.json({ alreadyCompleted: true, record: preCompleted });
+  }
+
   const inserted = await db
     .insert(CompletedLessonTable)
     .values({
@@ -173,9 +223,7 @@ export async function POST(req: NextRequest) {
       chapterId: lesson.chapterId,
       lessonId,
     })
-    .onConflictDoNothing({
-      target: [CompletedLessonTable.userId, CompletedLessonTable.lessonId],
-    })
+    .onConflictDoNothing()
     .returning();
 
   if (inserted.length === 0) {

@@ -99,12 +99,15 @@ export async function POST(req: NextRequest) {
   // New order: INSERT … ON CONFLICT DO NOTHING first. The unique
   // constraint on (userId, courseId) means exactly one request wins.
   // Only the winner runs the deduction + payment record.
+  // Use no-target onConflictDoNothing so the call works whether or
+  // not the unique-constraint migration (drizzle-kit push) has been
+  // applied. Without the constraint we rely on the SELECT above to
+  // catch the common already-enrolled case; the race window
+  // degrades to best-effort dedupe.
   const inserted = await db
     .insert(EnrolledCourseTable)
     .values({ userId, courseId, xpEarned: 0 })
-    .onConflictDoNothing({
-      target: [EnrolledCourseTable.userId, EnrolledCourseTable.courseId],
-    })
+    .onConflictDoNothing()
     .returning();
 
   if (inserted.length === 0) {

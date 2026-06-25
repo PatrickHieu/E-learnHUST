@@ -31,10 +31,15 @@ function YouTubeWithCheckpoints({
   const playerDivId = `yt-player-${mountId}`;
   const playerRef = useRef<YouTubePlayer | null>(null);
 
+  // Mirror the native-video filter: drop timestamp <= 0 checkpoints
+  // (admin's default placeholder) so we don't ambush the student the
+  // moment the iframe is ready. Sort the rest so .find() returns the
+  // earliest due checkpoint when the student scrubs across several.
   const ordered: CheckpointWithIndex[] = React.useMemo(
     () =>
       checkpoints
         .map((c, originalIndex) => ({ ...c, originalIndex }))
+        .filter((c) => c.timestamp > 0)
         .sort((a, b) => a.timestamp - b.timestamp),
     [checkpoints],
   );
