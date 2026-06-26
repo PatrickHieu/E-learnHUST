@@ -121,7 +121,13 @@ function Playground() {
 
   if (accessError) {
     return (
-      <div className="border-t-4 h-screen w-full flex">
+      // The global header in app/provider.tsx eats ~5rem at the top of
+      // the viewport; using bare h-screen here pushed the lesson's
+      // bottom bar + the runner's Run / Mark Completed buttons below
+      // the visible page, so the student had to scroll to even see the
+      // controls. Subtract the header height so the playground always
+      // fits between the header and the viewport bottom.
+      <div className="border-t-4 h-[calc(100dvh-5rem)] w-full flex">
         {/* Sidebar stays visible on the locked screen so the learner
             can jump back to an unlocked lesson without going through
             the course detail page. */}
@@ -144,7 +150,7 @@ function Playground() {
   }
 
   return (
-    <div className="border-t-4 h-screen w-full flex">
+    <div className="border-t-4 h-[calc(100dvh-5rem)] w-full flex">
       {/* Desktop sidebar — always visible at md+ */}
       <div className="hidden md:block h-full">
         <LessonSidebar {...sidebarProps} />

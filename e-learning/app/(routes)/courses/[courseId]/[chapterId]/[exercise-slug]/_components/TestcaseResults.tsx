@@ -30,9 +30,9 @@ export default function TestcaseResults({ totalCases, passedCases, results }: Pr
   if (results.length === 0) return null;
   const allPassed = passedCases === totalCases;
   return (
-    <div className="flex flex-col gap-2 px-3 py-2 border-t border-zinc-900">
+    <div className="flex flex-col gap-2 px-3 py-2 border-t border-zinc-900 max-h-72 overflow-y-auto">
       <div
-        className={`text-xs font-game uppercase tracking-wider ${
+        className={`text-xs font-game uppercase tracking-wider sticky top-0 bg-zinc-950 pb-1 ${
           allPassed ? "text-green-400" : "text-amber-400"
         }`}
       >
