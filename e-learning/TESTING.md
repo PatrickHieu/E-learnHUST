@@ -1,4 +1,4 @@
-# Testing guide — Code Block (E-learnHust)
+# Testing guide — ByteCraft (E-learnHust)
 
 This document covers how to:
 1. Spin up test accounts for each role

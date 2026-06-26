@@ -60,7 +60,7 @@ export default function SignInPage() {
         <header className="text-center flex flex-col items-center">
           <Image src={"/logo.png"} alt="Logo" width={40} height={40} />
           <h1 className="mt-3 text-base font-bold tracking-wide text-black uppercase">
-            Sign in to Code Block
+            Sign in to ByteCraft
           </h1>
         </header>
 

@@ -15,7 +15,7 @@ export default async function AdminDashboard() {
         <div className="font-sans">
             <div className="mb-8">
                 <h1 className="text-3xl font-semibold tracking-tight">Overview</h1>
-                <p className="text-sm text-zinc-500 mt-1">System-wide metrics for Code Block.</p>
+                <p className="text-sm text-zinc-500 mt-1">System-wide metrics for ByteCraft.</p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -120,7 +120,7 @@ export async function downloadCertificatePdf(
   doc.setFont(fontFamily, "bold");
   doc.setFontSize(14);
   doc.setTextColor(120, 120, 120);
-  doc.text("CODE BLOCK · E-LEARNHUST", pageWidth / 2, 30, { align: "center" });
+  doc.text("BYTECRAFT · E-LEARNHUST", pageWidth / 2, 30, { align: "center" });
 
   // Heading
   doc.setFont(fontFamily, "bold");
@@ -205,7 +205,7 @@ export async function downloadCertificatePdf(
   doc.setFont(fontFamily, "bold");
   doc.setFontSize(13);
   doc.setTextColor(40, 40, 40);
-  doc.text("Code Block · E-learnHUST", pageWidth - 70, footerY + 12, {
+  doc.text("ByteCraft · E-learnHUST", pageWidth - 70, footerY + 12, {
     align: "center",
   });
 

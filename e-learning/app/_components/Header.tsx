@@ -33,7 +33,7 @@ function Header() {
       <div>
         <Link href="/" className="flex gap-2 items-center">
           <Image src={"/logo.png"} alt="Logo" width={40} height={40} />
-          <h2 className="font-bold text-4xl font-game">Code Block</h2>
+          <h2 className="font-bold text-4xl font-game">ByteCraft</h2>
         </Link>
       </div>
 
