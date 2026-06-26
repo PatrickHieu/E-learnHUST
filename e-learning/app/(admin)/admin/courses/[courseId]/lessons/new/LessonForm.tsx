@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { createLessonAction } from "../../actions";
 import CheckpointsEditor from "../CheckpointsEditor";
-import type { VideoQuizCheckpoint } from "@/config/schema";
+import TestcasesEditor from "../TestcasesEditor";
+import type { ExerciseTestCase, VideoQuizCheckpoint } from "@/config/schema";
 
 type ChapterOption = { id: number; chapterId: number | null; name: string | null };
 
@@ -32,6 +33,7 @@ export default function LessonForm({ courseId, chapters }: Props) {
   const [pdfFileName, setPdfFileName] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [checkpoints, setCheckpoints] = useState<VideoQuizCheckpoint[]>([]);
+  const [testcases, setTestcases] = useState<ExerciseTestCase[]>([]);
   const pdfInputRef = useRef<HTMLInputElement>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -270,6 +272,11 @@ export default function LessonForm({ courseId, chapters }: Props) {
           <p className="text-xs text-zinc-500">
             Leave both regex and expected output blank to make this lesson auto-pass when the learner clicks Mark Completed.
           </p>
+
+          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5">
+            <TestcasesEditor testcases={testcases} onChange={setTestcases} />
+            <input type="hidden" name="testcases" value={JSON.stringify(testcases)} />
+          </div>
         </div>
       )}
 

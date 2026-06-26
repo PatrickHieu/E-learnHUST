@@ -10,6 +10,7 @@ import { Loader2, Play } from "lucide-react";
 import type { ExerciseLessonContent } from "@/config/schema";
 import { validateExerciseSubmission } from "@/lib/lesson-validation";
 import { UserDetailContext } from "@/context/UserDetailContext";
+import TestcaseResults, { type GradingCaseResult } from "./TestcaseResults";
 
 // Monaco is heavy and not SSR-safe — load it lazily on the client.
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
@@ -52,7 +53,18 @@ function PythonRunner({ lesson, isCompleted, refreshData }: Props) {
   const [output, setOutput] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "running">("idle");
   const [submitting, setSubmitting] = useState(false);
+  const [grading, setGrading] = useState(false);
+  const [gradeResult, setGradeResult] = useState<{
+    pass: boolean;
+    totalCases: number;
+    passedCases: number;
+    results: GradingCaseResult[];
+  } | null>(null);
   const workerRef = useRef<Worker | null>(null);
+
+  const hasTestcases = Boolean(
+    lesson.content.testcases && lesson.content.testcases.length > 0,
+  );
 
   // Lazy-spawn the worker the first time the learner clicks Run so the
   // 10MB Pyodide download doesn't fire on a passive page view.
@@ -91,15 +103,49 @@ function PythonRunner({ lesson, isCompleted, refreshData }: Props) {
     w.postMessage({ type: "run", code: source });
   }
 
+  // Trial-run test cases server-side via Judge0 (python language_id=71).
+  // Pyodide runs the editor's Run button locally for fast feedback,
+  // but grading goes through the server so the same sandbox + same
+  // limits apply to every learner regardless of browser quirks.
+  async function handleRunTestcases() {
+    if (grading) return;
+    setGradeResult(null);
+    setGrading(true);
+    try {
+      const res = await axios.post<{
+        pass: boolean;
+        totalCases: number;
+        passedCases: number;
+        results: GradingCaseResult[];
+      }>("/api/code/grade", { lessonId: lesson.id, source, language: "python" });
+      setGradeResult(res.data);
+      if (res.data.pass) {
+        toast.success(`All ${res.data.totalCases} test cases passed!`);
+      } else {
+        toast.error(
+          `${res.data.passedCases}/${res.data.totalCases} test cases passed`,
+        );
+      }
+    } catch (err: any) {
+      const detail = err?.response?.data;
+      const hint = detail?.hint ? `\n${detail.hint}` : "";
+      toast.error((detail?.error ?? err.message) + hint);
+    } finally {
+      setGrading(false);
+    }
+  }
+
   async function handleMarkCompleted() {
     if (submitting) return;
-    // Same validation contract as the Sandpack flow: regex /
-    // expectedOutput run against the source string. Server re-runs
-    // the check so client-side bypass is harmless.
-    const local = validateExerciseSubmission(lesson.content, source);
-    if (!local.pass) {
-      toast.error(local.reason);
-      return;
+    // For lessons without test cases the legacy regex check still
+    // applies; for lessons with test cases the server-side grader is
+    // the gate and the local check is a no-op.
+    if (!hasTestcases) {
+      const local = validateExerciseSubmission(lesson.content, source);
+      if (!local.pass) {
+        toast.error(local.reason);
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -112,7 +158,11 @@ function PythonRunner({ lesson, isCompleted, refreshData }: Props) {
       await refreshUserDetail();
       router.refresh();
     } catch (err: any) {
-      const reason = err?.response?.data?.reason;
+      const data = err?.response?.data;
+      if (data?.grading?.results) {
+        setGradeResult(data.grading);
+      }
+      const reason = data?.reason;
       toast.error(reason ?? "Failed to mark lesson as completed");
     } finally {
       setSubmitting(false);
@@ -144,7 +194,7 @@ function PythonRunner({ lesson, isCompleted, refreshData }: Props) {
             {status === "loading" && " · loading Python runtime…"}
             {status === "running" && " · running…"}
           </span>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button
               variant="pixel"
               size="sm"
@@ -159,6 +209,18 @@ function PythonRunner({ lesson, isCompleted, refreshData }: Props) {
               )}
               Run
             </Button>
+            {hasTestcases && (
+              <Button
+                variant="pixel"
+                size="sm"
+                onClick={handleRunTestcases}
+                disabled={grading}
+                className="font-game gap-2"
+              >
+                {grading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Run Test Cases
+              </Button>
+            )}
             <Button
               variant="pixel"
               size="sm"
@@ -177,6 +239,13 @@ function PythonRunner({ lesson, isCompleted, refreshData }: Props) {
             </span>
           )}
         </pre>
+        {gradeResult && (
+          <TestcaseResults
+            totalCases={gradeResult.totalCases}
+            passedCases={gradeResult.passedCases}
+            results={gradeResult.results}
+          />
+        )}
       </div>
     </div>
   );

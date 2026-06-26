@@ -100,6 +100,51 @@ function buildLessonContent(type: string, formData: FormData): BuildResult {
     const starterCodeText = (formData.get("starterCode") as string) ?? "";
     const regex = (formData.get("regex") as string)?.trim() || undefined;
     const expectedOutput = (formData.get("expectedOutput") as string) || undefined;
+
+    // TestcasesEditor serialises its rows as a JSON array on a hidden
+    // input. Parse defensively — a malformed payload should fall back
+    // to "no test cases" rather than spike the whole save.
+    const rawTestcases = (formData.get("testcases") as string) ?? "";
+    let testcases: Array<{
+      name?: string;
+      input: string;
+      expectedOutput: string;
+      hidden?: boolean;
+    }> = [];
+    if (rawTestcases) {
+      try {
+        const parsed = JSON.parse(rawTestcases);
+        if (Array.isArray(parsed)) {
+          testcases = parsed
+            .filter(
+              (t): t is { input: string; expectedOutput: string } =>
+                t && typeof t === "object" &&
+                typeof (t as { input?: unknown }).input === "string" &&
+                typeof (t as { expectedOutput?: unknown }).expectedOutput === "string",
+            )
+            .map((t) => {
+              const raw = t as {
+                name?: unknown;
+                input: string;
+                expectedOutput: string;
+                hidden?: unknown;
+              };
+              return {
+                name:
+                  typeof raw.name === "string"
+                    ? raw.name.trim() || undefined
+                    : undefined,
+                input: raw.input,
+                expectedOutput: raw.expectedOutput,
+                hidden: Boolean(raw.hidden),
+              };
+            });
+        }
+      } catch {
+        // Ignore — the form re-renders and the admin can fix it.
+      }
+    }
+
     if (!exContent) return { ok: false, error: "Content (description) is required" };
     if (!task) return { ok: false, error: "Task instructions are required" };
     if (!starterFilename) return { ok: false, error: "Starter filename is required (e.g. /index.html)" };
@@ -113,6 +158,7 @@ function buildLessonContent(type: string, formData: FormData): BuildResult {
         starterCode: { [starterFilename]: starterCodeText },
         regex,
         expectedOutput: expectedOutput && expectedOutput.trim() ? expectedOutput : undefined,
+        testcases: testcases.length > 0 ? testcases : undefined,
         difficulty,
       },
     };

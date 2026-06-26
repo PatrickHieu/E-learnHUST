@@ -146,14 +146,33 @@ export type PdfLessonContent = {
     pageCount?: number;
 };
 
+// A single stdin/stdout test case used to grade C, C++ and Python
+// exercises server-side via Judge0. The grader feeds `input` to the
+// compiled program, captures stdout, normalises whitespace, and
+// compares to `expectedOutput`. `hidden` test cases are run during
+// grading but their input/expected text is never sent to the client —
+// only the pass/fail flag, so students can't reverse-engineer the
+// expected answer from the page source.
+export type ExerciseTestCase = {
+    name?: string;
+    input: string;
+    expectedOutput: string;
+    hidden?: boolean;
+};
+
 export type ExerciseLessonContent = {
     content: string;
     task: string;
     hint: string;
     hintXp: number;
     starterCode: Record<string, string>;
+    // Legacy fallback validators. When `testcases` is populated for a
+    // C / C++ / Python lesson, the grader uses it and ignores these.
+    // HTML/CSS/JS lessons keep using `regex` because there's no
+    // headless DOM judge wired in.
     regex?: string;
     expectedOutput?: string;
+    testcases?: ExerciseTestCase[];
     difficulty?: 'easy' | 'medium' | 'hard';
 };
 

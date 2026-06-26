@@ -10,6 +10,7 @@ import { Loader2, Play } from "lucide-react";
 import type { ExerciseLessonContent } from "@/config/schema";
 import { validateExerciseSubmission } from "@/lib/lesson-validation";
 import { UserDetailContext } from "@/context/UserDetailContext";
+import TestcaseResults, { type GradingCaseResult } from "./TestcaseResults";
 
 const MonacoEditor = dynamic(() => import("@monaco-editor/react"), {
   ssr: false,
@@ -60,6 +61,17 @@ function CppRunner({ lesson, language, isCompleted, refreshData }: Props) {
   const [output, setOutput] = useState("");
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [grading, setGrading] = useState(false);
+  const [gradeResult, setGradeResult] = useState<{
+    pass: boolean;
+    totalCases: number;
+    passedCases: number;
+    results: GradingCaseResult[];
+  } | null>(null);
+
+  const hasTestcases = Boolean(
+    lesson.content.testcases && lesson.content.testcases.length > 0,
+  );
 
   async function runCode() {
     if (running) return;
@@ -92,12 +104,50 @@ function CppRunner({ lesson, language, isCompleted, refreshData }: Props) {
     }
   }
 
+  // Trial-run the test cases without locking in completion. Lets the
+  // student iterate on failing cases before they spend the submit.
+  // The server endpoint re-grades on /api/lesson/complete anyway, so
+  // even if this returns "all pass" the gate still holds.
+  async function handleRunTestcases() {
+    if (grading) return;
+    setGradeResult(null);
+    setGrading(true);
+    try {
+      const res = await axios.post<{
+        pass: boolean;
+        totalCases: number;
+        passedCases: number;
+        results: GradingCaseResult[];
+      }>("/api/code/grade", { lessonId: lesson.id, source, language });
+      setGradeResult(res.data);
+      if (res.data.pass) {
+        toast.success(`All ${res.data.totalCases} test cases passed!`);
+      } else {
+        toast.error(
+          `${res.data.passedCases}/${res.data.totalCases} test cases passed`,
+        );
+      }
+    } catch (err: any) {
+      const detail = err?.response?.data;
+      const hint = detail?.hint ? `\n${detail.hint}` : "";
+      toast.error((detail?.error ?? err.message) + hint);
+    } finally {
+      setGrading(false);
+    }
+  }
+
   async function handleMarkCompleted() {
     if (submitting) return;
-    const local = validateExerciseSubmission(lesson.content, source);
-    if (!local.pass) {
-      toast.error(local.reason);
-      return;
+    // For lessons without test cases the legacy regex check still
+    // applies; for lessons with test cases the local check is a no-op
+    // (regex / expectedOutput are ignored server-side) and the real
+    // gate is the testcase pass on /api/lesson/complete.
+    if (!hasTestcases) {
+      const local = validateExerciseSubmission(lesson.content, source);
+      if (!local.pass) {
+        toast.error(local.reason);
+        return;
+      }
     }
     setSubmitting(true);
     try {
@@ -110,7 +160,14 @@ function CppRunner({ lesson, language, isCompleted, refreshData }: Props) {
       await refreshUserDetail();
       router.refresh();
     } catch (err: any) {
-      const reason = err?.response?.data?.reason;
+      const data = err?.response?.data;
+      // If the server bounced us because some test cases failed, hydrate
+      // the panel with its grading payload so the student sees the
+      // breakdown immediately without another button press.
+      if (data?.grading?.results) {
+        setGradeResult(data.grading);
+      }
+      const reason = data?.reason;
       toast.error(reason ?? "Failed to mark lesson as completed");
     } finally {
       setSubmitting(false);
@@ -149,7 +206,7 @@ function CppRunner({ lesson, language, isCompleted, refreshData }: Props) {
               className="font-mono text-sm bg-zinc-900 border-2 border-zinc-700 rounded-md px-2 py-1 text-zinc-100 outline-none focus:border-yellow-400"
             />
           </label>
-          <div className="flex items-end justify-end gap-2">
+          <div className="flex items-end justify-end gap-2 flex-wrap">
             <Button
               variant="pixel"
               size="sm"
@@ -164,6 +221,18 @@ function CppRunner({ lesson, language, isCompleted, refreshData }: Props) {
               )}
               Run
             </Button>
+            {hasTestcases && (
+              <Button
+                variant="pixel"
+                size="sm"
+                onClick={handleRunTestcases}
+                disabled={grading}
+                className="font-game gap-2"
+              >
+                {grading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                Run Test Cases
+              </Button>
+            )}
             <Button
               variant="pixel"
               size="sm"
@@ -183,6 +252,13 @@ function CppRunner({ lesson, language, isCompleted, refreshData }: Props) {
             </span>
           )}
         </pre>
+        {gradeResult && (
+          <TestcaseResults
+            totalCases={gradeResult.totalCases}
+            passedCases={gradeResult.passedCases}
+            results={gradeResult.results}
+          />
+        )}
       </div>
     </div>
   );

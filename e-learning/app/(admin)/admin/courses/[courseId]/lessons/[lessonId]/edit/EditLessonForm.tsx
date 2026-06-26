@@ -8,7 +8,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import { updateLessonAction } from "../../../actions";
 import CheckpointsEditor from "../../CheckpointsEditor";
-import type { VideoQuizCheckpoint } from "@/config/schema";
+import TestcasesEditor from "../../TestcasesEditor";
+import type { ExerciseTestCase, VideoQuizCheckpoint } from "@/config/schema";
 
 type Props = {
   courseId: number;
@@ -36,6 +37,13 @@ export default function EditLessonForm({ courseId, lesson }: Props) {
       : [];
   const [checkpoints, setCheckpoints] =
     useState<VideoQuizCheckpoint[]>(initialCheckpoints);
+
+  const initialTestcases: ExerciseTestCase[] =
+    lesson.type === "exercise" && Array.isArray(lesson.content?.testcases)
+      ? (lesson.content.testcases as ExerciseTestCase[])
+      : [];
+  const [testcases, setTestcases] =
+    useState<ExerciseTestCase[]>(initialTestcases);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -256,6 +264,11 @@ export default function EditLessonForm({ courseId, lesson }: Props) {
                 defaultValue={v.expectedOutput ?? ""}
               />
             </div>
+          </div>
+
+          <div className="border-t border-zinc-200 dark:border-zinc-800 pt-5">
+            <TestcasesEditor testcases={testcases} onChange={setTestcases} />
+            <input type="hidden" name="testcases" value={JSON.stringify(testcases)} />
           </div>
         </div>
       )}

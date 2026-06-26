@@ -19,6 +19,11 @@ import {
 } from "@/lib/lesson-validation";
 import { isChapterUnlocked, isLessonGating } from "@/lib/chapter-gating";
 import { getAccessTier, hasProSubscription } from "@/lib/course-access";
+import {
+  detectGradingLanguage,
+  gradeWithTestcases,
+  supportsTestcaseGrading,
+} from "@/lib/code-grading";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
@@ -154,7 +159,43 @@ export async function POST(req: NextRequest) {
   // Client check is convenience only — it can be bypassed.
   if (lesson.type === "exercise") {
     const exerciseContent = lesson.content as ExerciseLessonContent;
-    if (lessonRequiresValidation(exerciseContent)) {
+    const testcases = exerciseContent.testcases ?? [];
+
+    // Test-case grading (C / C++ / Python). When the lesson has
+    // test cases AND its starter code identifies one of the runnable
+    // languages, the source-code regex / expectedOutput substring
+    // checks are skipped — output-based grading is strictly stronger
+    // and is what the spec's "kết quả mong đợi" should actually mean.
+    // This is also what the API description in the report references
+    // when it says "stdin/stdout test cases via Judge0".
+    const gradingLanguage = detectGradingLanguage(exerciseContent.starterCode);
+    if (testcases.length > 0 && gradingLanguage && supportsTestcaseGrading(gradingLanguage)) {
+      const grade = await gradeWithTestcases({
+        language: gradingLanguage,
+        source: typeof submission === "string" ? submission : "",
+        testcases,
+      });
+      if (grade.judgeNotConfigured) {
+        return NextResponse.json(
+          {
+            error: "Code grading not configured",
+            reason: "The instructor needs to wire JUDGE0_RAPIDAPI_KEY for this lesson.",
+          },
+          { status: 503 },
+        );
+      }
+      if (!grade.pass) {
+        return NextResponse.json(
+          {
+            error: "Submission did not pass all test cases",
+            reason: `Passed ${grade.passedCases}/${grade.totalCases} test cases. Open the runner to see which ones failed.`,
+            grading: grade,
+          },
+          { status: 422 },
+        );
+      }
+      // Pass — fall through to XP credit.
+    } else if (lessonRequiresValidation(exerciseContent)) {
       const result = validateExerciseSubmission(
         exerciseContent,
         typeof submission === "string" ? submission : "",
