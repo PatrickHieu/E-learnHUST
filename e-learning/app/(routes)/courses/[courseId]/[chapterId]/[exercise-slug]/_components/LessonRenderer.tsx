@@ -44,6 +44,11 @@ type Props = {
   loading: boolean;
   refreshData: () => void;
   completedCheckpointIndexes?: number[];
+  // Source the student submitted when they passed this lesson. The
+  // exercise runner uses it as the initial editor value on revisit
+  // so they can re-read their working solution instead of the empty
+  // starter snippet.
+  savedSubmission?: string | null;
 };
 
 function LessonRenderer({
@@ -53,6 +58,7 @@ function LessonRenderer({
   loading,
   refreshData,
   completedCheckpointIndexes = [],
+  savedSubmission = null,
 }: Props) {
   const router = useRouter();
   const { refreshUserDetail } = useContext(UserDetailContext);
@@ -144,6 +150,7 @@ function LessonRenderer({
           lesson={exerciseLesson}
           isCompleted={isCompleted}
           refreshData={refreshData}
+          savedSubmission={savedSubmission}
         />
       );
     } else if (t === "c" || t === "cpp" || t === "c++") {
@@ -153,6 +160,7 @@ function LessonRenderer({
           language={t === "c" ? "c" : "cpp"}
           isCompleted={isCompleted}
           refreshData={refreshData}
+          savedSubmission={savedSubmission}
         />
       );
     } else {

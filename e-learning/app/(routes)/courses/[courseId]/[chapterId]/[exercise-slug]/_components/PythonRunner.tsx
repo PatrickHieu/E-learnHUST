@@ -32,6 +32,9 @@ type Props = {
   lesson: LessonExercise;
   isCompleted: boolean;
   refreshData?: () => void;
+  // When the student previously completed this lesson, their winning
+  // source is replayed into the editor instead of the starter.
+  savedSubmission?: string | null;
 };
 
 // Picks an initial Python snippet from the lesson's starterCode map.
@@ -46,10 +49,19 @@ function pickStarter(starterCode: Record<string, string>): string {
   return firstKey ? starterCode[firstKey] : "# Write your Python here\n";
 }
 
-function PythonRunner({ lesson, isCompleted, refreshData }: Props) {
+function PythonRunner({
+  lesson,
+  isCompleted,
+  refreshData,
+  savedSubmission,
+}: Props) {
   const router = useRouter();
   const { refreshUserDetail } = useContext(UserDetailContext);
-  const [source, setSource] = useState(() => pickStarter(lesson.content.starterCode));
+  const [source, setSource] = useState(() =>
+    savedSubmission && savedSubmission.length > 0
+      ? savedSubmission
+      : pickStarter(lesson.content.starterCode),
+  );
   const [output, setOutput] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "ready" | "running">("idle");
   const [submitting, setSubmitting] = useState(false);

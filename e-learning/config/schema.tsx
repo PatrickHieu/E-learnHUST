@@ -1,4 +1,4 @@
-import { integer, json, pgTable, unique, varchar, timestamp } from "drizzle-orm/pg-core";
+import { integer, json, pgTable, text, unique, varchar, timestamp } from "drizzle-orm/pg-core";
 
 
 export const usersTable = pgTable("users", {
@@ -95,6 +95,13 @@ export const CompletedLessonTable = pgTable('completedLesson', {
     chapterId: integer().notNull(),
     lessonId: integer().notNull(),
     completedAt: timestamp().defaultNow(),
+    // The student's exact source for exercise lessons, captured at the
+    // moment they passed the grader. Lets the runner reopen the lesson
+    // pre-filled with their winning solution instead of the starter
+    // snippet so they can re-read what worked. Null for quiz / video /
+    // pdf lessons (no source code submitted) and for rows that pre-date
+    // this column.
+    submission: text(),
 }, (t) => [
     unique('completed_lesson_user_lesson_unique').on(t.userId, t.lessonId),
 ]);

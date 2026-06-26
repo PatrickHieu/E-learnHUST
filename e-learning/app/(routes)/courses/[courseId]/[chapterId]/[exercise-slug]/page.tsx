@@ -27,6 +27,10 @@ type LessonResponse = {
   siblings: Sibling[],
   completedLessonIds: number[],
   completedCheckpointIndexes: number[],
+  // Source code the student submitted when they passed this lesson.
+  // Null if they haven't completed it yet, or for non-exercise lessons.
+  // The runner replays it instead of the starter snippet on revisit.
+  savedSubmission: string | null,
   editorType: string | null,
 };
 
@@ -173,6 +177,7 @@ function Playground() {
             loading={loading}
             refreshData={refreshAll}
             completedCheckpointIndexes={data?.completedCheckpointIndexes ?? []}
+            savedSubmission={data?.savedSubmission ?? null}
           />
         </div>
 
