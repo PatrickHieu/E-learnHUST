@@ -143,16 +143,30 @@ export async function POST(req: NextRequest) {
     )
     .orderBy(asc(LessonsTable.orderIndex));
 
+  // Return every completed lesson in the COURSE (not just the current
+  // chapter). The sidebar uses this list both to render the green
+  // checks AND to feed isChapterUnlocked() — scoping it to the current
+  // chapter made previously finished chapters appear locked the
+  // moment the student navigated into a later chapter, because the
+  // gating helper couldn't see the completions that unlocked them.
   const completed = await db
-    .select({ lessonId: CompletedLessonTable.lessonId })
+    .select({
+      lessonId: CompletedLessonTable.lessonId,
+      submission: CompletedLessonTable.submission,
+    })
     .from(CompletedLessonTable)
     .where(
       and(
         eq(CompletedLessonTable.userId, userId),
         eq(CompletedLessonTable.courseId, courseId),
-        eq(CompletedLessonTable.chapterId, chapterId),
       ),
     );
+  // Surface the source the student submitted for this lesson, if any,
+  // so the runner can preload it instead of the starter snippet on a
+  // revisit. Pulled out of the course-wide set above so we don't need
+  // a second query.
+  const savedSubmission =
+    completed.find((c) => c.lessonId === lesson.id)?.submission ?? null;
 
   const [course] = await db
     .select({ editorType: CoursesTable.editorType })
@@ -183,6 +197,7 @@ export async function POST(req: NextRequest) {
     siblings,
     completedLessonIds: completed.map((c) => c.lessonId),
     completedCheckpointIndexes,
+    savedSubmission,
     editorType: course?.editorType ?? null,
   });
 }

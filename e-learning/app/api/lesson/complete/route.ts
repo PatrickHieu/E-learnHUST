@@ -256,6 +256,15 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ alreadyCompleted: true, record: preCompleted });
   }
 
+  // Capture the source for exercise lessons so the runner can replay
+  // the winning solution when the student revisits the lesson. Quiz /
+  // video / pdf lessons send "submission" too but it's not source
+  // code we want to surface back — leave the column null for those.
+  const savedSubmission =
+    lesson.type === "exercise" && typeof submission === "string"
+      ? submission
+      : null;
+
   const inserted = await db
     .insert(CompletedLessonTable)
     .values({
@@ -263,6 +272,7 @@ export async function POST(req: NextRequest) {
       courseId: lesson.courseId,
       chapterId: lesson.chapterId,
       lessonId,
+      submission: savedSubmission,
     })
     .onConflictDoNothing()
     .returning();

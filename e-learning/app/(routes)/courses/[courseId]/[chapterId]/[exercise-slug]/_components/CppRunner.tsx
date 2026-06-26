@@ -32,6 +32,9 @@ type Props = {
   language: "c" | "cpp";
   isCompleted: boolean;
   refreshData?: () => void;
+  // When the student previously completed this lesson, their winning
+  // source code is replayed into the editor instead of the starter.
+  savedSubmission?: string | null;
 };
 
 function pickStarter(
@@ -51,11 +54,22 @@ function pickStarter(
     : "#include <iostream>\n\nint main() {\n    std::cout << \"Hello, world!\\n\";\n    return 0;\n}\n";
 }
 
-function CppRunner({ lesson, language, isCompleted, refreshData }: Props) {
+function CppRunner({
+  lesson,
+  language,
+  isCompleted,
+  refreshData,
+  savedSubmission,
+}: Props) {
   const router = useRouter();
   const { refreshUserDetail } = useContext(UserDetailContext);
   const [source, setSource] = useState(() =>
-    pickStarter(lesson.content.starterCode, language),
+    // Prefer the student's saved winning solution over the starter
+    // snippet when they revisit a completed lesson. Falls back to the
+    // starter for first-time visits and lessons with no submission row.
+    savedSubmission && savedSubmission.length > 0
+      ? savedSubmission
+      : pickStarter(lesson.content.starterCode, language),
   );
   const [stdin, setStdin] = useState("");
   const [output, setOutput] = useState("");
