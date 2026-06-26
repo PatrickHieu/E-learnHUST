@@ -143,6 +143,12 @@ export async function POST(req: NextRequest) {
     )
     .orderBy(asc(LessonsTable.orderIndex));
 
+  // Return every completed lesson in the COURSE (not just the current
+  // chapter). The sidebar uses this list both to render the green
+  // checks AND to feed isChapterUnlocked() — scoping it to the current
+  // chapter made previously finished chapters appear locked the
+  // moment the student navigated into a later chapter, because the
+  // gating helper couldn't see the completions that unlocked them.
   const completed = await db
     .select({ lessonId: CompletedLessonTable.lessonId })
     .from(CompletedLessonTable)
@@ -150,7 +156,6 @@ export async function POST(req: NextRequest) {
       and(
         eq(CompletedLessonTable.userId, userId),
         eq(CompletedLessonTable.courseId, courseId),
-        eq(CompletedLessonTable.chapterId, chapterId),
       ),
     );
 
