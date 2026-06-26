@@ -5,8 +5,10 @@ import { CheckCircle2, EyeOff, XCircle } from "lucide-react";
 
 // Shared per-test pass/fail panel rendered by both the C/C++ and
 // Python runners. Hidden cases only show pass/fail + name; visible
-// cases also show stdin / expected / actual so the student can see
-// the diff that needs fixing.
+// cases always show stdin / expected / actual so the student can
+// see what was fed in, what the grader expected, and what their
+// program produced — even on success, so they can compare line by
+// line. The grader only sends payload for visible cases anyway.
 export type GradingCaseResult = {
   name: string;
   passed: boolean;
@@ -69,11 +71,15 @@ export default function TestcaseResults({ totalCases, passedCases, results }: Pr
               </span>
             </div>
 
-            {!r.passed && !r.hidden && (
+            {!r.hidden && (
               <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1 text-xs">
                 <Snippet label="Stdin" value={r.input} />
                 <Snippet label="Expected" value={r.expected} />
-                <Snippet label="Got" value={r.actual} stderr={r.stderr} />
+                <Snippet
+                  label={r.passed ? "Your output" : "Got"}
+                  value={r.actual}
+                  stderr={r.stderr}
+                />
               </div>
             )}
           </li>
