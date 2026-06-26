@@ -34,16 +34,36 @@ export async function POST(req: NextRequest) {
 
   const unlockCost = course.unlockCost ?? 0;
 
-  // Defense finding (b): unique constraint on (userId, courseId)
-  // means insert wins exactly once across racing requests. Only the
-  // winner runs the deduction afterwards — guarantees no double-
-  // charge from concurrent clicks.
+  // Defense finding (b) follow-up: previously this used
+  // `.onConflictDoNothing({ target: [userId, courseId] })`, which
+  // throws on Postgres unless the matching unique constraint is
+  // already deployed. If the operator hadn't run `drizzle-kit push`
+  // yet (the script that creates the constraint), every enrol POST
+  // 500'd — that was the "không enroll được" symptom.
+  //
+  // New shape: explicit SELECT-first for the common (already-
+  // enrolled) case, then `.onConflictDoNothing()` with no target so
+  // the call is safe whether or not the constraint exists. Without
+  // the constraint the race-safety degrades to "best effort dedupe"
+  // but the basic flow always works.
+  const preExisting = await db
+    .select()
+    .from(EnrolledCourseTable)
+    .where(
+      and(
+        eq(EnrolledCourseTable.userId, userId),
+        eq(EnrolledCourseTable.courseId, courseId),
+      ),
+    )
+    .limit(1);
+  if (preExisting.length > 0) {
+    return NextResponse.json({ alreadyEnrolled: true, record: preExisting[0] });
+  }
+
   const inserted = await db
     .insert(EnrolledCourseTable)
     .values({ userId, courseId, xpEarned: 0 })
-    .onConflictDoNothing({
-      target: [EnrolledCourseTable.userId, EnrolledCourseTable.courseId],
-    })
+    .onConflictDoNothing()
     .returning();
 
   if (inserted.length === 0) {

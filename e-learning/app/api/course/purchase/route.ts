@@ -60,15 +60,29 @@ export async function POST(req: NextRequest) {
   // value to prevent a tampered "I paid 1.000₫" replay.
   const amountVnd = effectivePriceVnd(course.level, course.priceVnd, course.courseId);
 
-  // Race-safety (finding b): atomic insert via the unique constraint
-  // on (userId, courseId). Only the winning request records a
-  // payment, so a double-click can't bill twice.
+  // Race-safety (finding b) + compat: SELECT-first dedupe so the
+  // route works whether or not the (userId, courseId) unique
+  // constraint has been pushed to the DB. We then use a no-target
+  // onConflictDoNothing as the secondary safety net for the race
+  // case when the constraint *is* present.
+  const preExisting = await db
+    .select({ id: EnrolledCourseTable.id })
+    .from(EnrolledCourseTable)
+    .where(
+      and(
+        eq(EnrolledCourseTable.userId, userId),
+        eq(EnrolledCourseTable.courseId, courseId),
+      ),
+    )
+    .limit(1);
+  if (preExisting.length > 0) {
+    return NextResponse.json({ alreadyEnrolled: true }, { status: 200 });
+  }
+
   const inserted = await db
     .insert(EnrolledCourseTable)
     .values({ userId, courseId, xpEarned: 0 })
-    .onConflictDoNothing({
-      target: [EnrolledCourseTable.userId, EnrolledCourseTable.courseId],
-    })
+    .onConflictDoNothing()
     .returning();
 
   if (inserted.length === 0) {
