@@ -16,7 +16,8 @@
     "bootstrap:test-accounts": "tsx scripts/bootstrap-test-accounts.ts",
     "migrate:role-rename": "tsx scripts/migrate-librarian-to-instructor.ts",
     "seed:language-demos": "tsx scripts/seed-language-demos.ts",
-    "seed:testcase-exercises": "tsx scripts/seed-testcase-exercises.ts"
+    "seed:testcase-exercises": "tsx scripts/seed-testcase-exercises.ts",
+    "migrate:legacy-to-testcases": "tsx scripts/migrate-legacy-exercises-to-testcases.ts"
   },
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.20.0",
