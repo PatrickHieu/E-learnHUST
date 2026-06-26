@@ -90,7 +90,14 @@ function CourseChapter({ loading, courseDetail }: Props) {
                               <h2 className='text-3xl'>{lesson.title}</h2>
                             </div>
                             {isCompleted ? (
-                              <Button variant={'pixel'} className='bg-green-600'>Completed</Button>
+                              // Wrap the Completed pill in a Link so students
+                              // can re-enter a finished lesson to re-read
+                              // their saved submission or replay the video.
+                              // Without the wrapper the button was just a
+                              // static green chip — clicking did nothing.
+                              <Link href={`/courses/${courseDetail?.courseId}/${chapter?.chapterId}/${lesson.slug}`}>
+                                <Button variant={'pixel'} className='bg-green-600'>Completed</Button>
+                              </Link>
                             ) : isLocked ? (
                               <Tooltip>
                                 <TooltipTrigger asChild>
