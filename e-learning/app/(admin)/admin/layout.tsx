@@ -22,7 +22,7 @@ export default async function AdminLayout({
                     <div className="text-xs uppercase tracking-widest text-zinc-500">
                         {isAdmin ? "Admin" : "Instructor"}
                     </div>
-                    <div className="text-xl font-semibold mt-1">Code Block</div>
+                    <div className="text-xl font-semibold mt-1">ByteCraft</div>
                 </div>
 
                 <nav className="flex flex-col gap-1 flex-1">

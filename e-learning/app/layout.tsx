@@ -22,7 +22,7 @@ const GameFont = Jersey_10({
 });
 
 export const metadata: Metadata = {
-  title: "Code Block · E-learnHUST",
+  title: "ByteCraft · E-learnHUST",
   description: "Beginner-friendly coding courses and projects.",
 };
 
