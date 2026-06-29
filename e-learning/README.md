@@ -1,36 +1,135 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ByteCraft · E-learnHUST
 
-## Getting Started
+Nền tảng học lập trình tương tác (Next.js 16 + React 19) cho sinh viên HUST.
+Hỗ trợ HTML/CSS/JS (Sandpack), Python (Pyodide trong trình duyệt) và C/C++
+(Judge0 sandbox cloud). Bài tập chấm bằng bộ test stdin/stdout — phải pass
+hết mới được full XP.
 
-First, run the development server:
+## Yêu cầu
+
+- Node.js ≥ 20
+- npm (đi kèm Node)
+- Tài khoản Neon (Postgres miễn phí) — https://console.neon.tech
+- (Tùy chọn) Tài khoản RapidAPI để dùng Judge0 chấm C/C++/Python
+
+## Cài đặt
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# 1. Cài dependencies
+npm install
+
+# 2. Tạo file .env từ template
+cp .env.example .env
+
+# 3. Mở .env và điền tối thiểu:
+#    - DATABASE_URL  (từ Neon dashboard)
+#    - AUTH_SECRET   (sinh bằng: openssl rand -base64 32)
+#    - JUDGE0_RAPIDAPI_KEY  (nếu muốn chấm test case C/C++/Python)
+
+# 4. Đẩy schema lên DB (tạo bảng + unique constraint)
+npx drizzle-kit push
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Chạy
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+# Dev server (hot reload, port 3000)
+npm run dev
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Build production
+npm run build
 
-## Learn More
+# Chạy bản build
+npm start
+```
 
-To learn more about Next.js, take a look at the following resources:
+Mở http://localhost:3000
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Khởi tạo dữ liệu
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+# Tài khoản admin đầu tiên (đọc ADMIN_EMAIL/PASSWORD/NAME từ .env)
+npm run bootstrap:admin
 
-## Deploy on Vercel
+# 3 tài khoản test cho từng role (admin / instructor / student)
+# password chung: Password1!
+npm run bootstrap:test-accounts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# 3 khóa demo: Web Foundations, Python Quickstart, C++ Foundations
+npm run seed:language-demos
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+# Chapter "Test-case exercises" cho Python + C++ (4 bài/khóa, mỗi bài 4 testcases)
+npm run seed:testcase-exercises
+
+# Convert các bài cũ (regex/expectedOutput) sang dùng test case
+npm run migrate:legacy-to-testcases
+```
+
+Các script khác (chạy khi cần dữ liệu báo cáo / biểu đồ):
+
+```bash
+npm run seed:demo            # khóa học mẫu HTML/CSS/JS đầu tiên
+npm run seed:phase3-demo     # nội dung Phase 3 (video + checkpoint quiz)
+npm run seed:fake-users      # ~50 user giả để vẽ leaderboard
+npm run seed:fake-payments   # giao dịch stars + VND giả cho admin chart
+```
+
+## Test
+
+```bash
+npm test          # chạy một lần
+npm run test:watch
+```
+
+## Cấu trúc thư mục
+
+```
+app/                Next.js App Router (routes + API)
+  (admin)/admin    Trang quản trị (admin + instructor)
+  (auth)/sign-in   Trang đăng nhập
+  (routes)/...     Trang dành cho học viên
+  api/...          API routes
+components/         shadcn/ui components
+config/             Drizzle ORM (db.tsx, schema.tsx)
+context/            React Context providers
+hooks/              React hooks dùng chung
+lib/                Helper logic (chấm bài, course access, v.v.)
+public/             Asset tĩnh + Python worker (Pyodide)
+scripts/            Seed / bootstrap / migration scripts
+types/              Type declaration toàn cục
+```
+
+## Tech stack
+
+| Lớp | Công nghệ |
+|---|---|
+| Framework | Next.js 16 (App Router), React 19 |
+| Auth | Auth.js v5 (Credentials + Google OAuth, JWT) |
+| Database | Neon Postgres + Drizzle ORM |
+| UI | Tailwind CSS 4, shadcn/ui (Radix primitives) |
+| Code runtime | Sandpack (web), Pyodide WASM (Python), Judge0 cloud (C/C++/Python) |
+| Charts | Recharts |
+| Certificate | jsPDF + DejaVu Sans (hỗ trợ tiếng Việt) |
+
+## Cơ chế chấm bài
+
+- **C / C++ / Python**: server chạy mỗi test case qua Judge0 sandbox (CPU
+  5s / wall 8s / memory 256MB), so output đã chuẩn hoá whitespace. Phải
+  pass HẾT mới được cộng XP. Test case `hidden` ẩn input/expected khỏi
+  payload trả về client.
+- **HTML/CSS/JS Sandpack**: dùng regex / substring trên source (legacy,
+  ghi rõ trong báo cáo là "kiểm tra mẫu", không phải chấm thuật toán).
+
+Source: `lib/code-grading.ts` + `app/api/lesson/complete/route.ts`.
+
+## Deploy
+
+Project tương thích Vercel. Trên dashboard Vercel:
+
+1. Import repo
+2. Project Settings → Environment Variables: copy toàn bộ `.env`
+3. Deploy
+
+Sau lần deploy đầu, chạy `npx drizzle-kit push` từ máy local (trỏ
+`DATABASE_URL` về Neon production) để tạo bảng. Sau đó chạy
+`npm run bootstrap:admin` để có tài khoản đăng nhập.
