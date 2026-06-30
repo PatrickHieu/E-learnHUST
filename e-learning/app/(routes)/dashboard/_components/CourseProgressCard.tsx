@@ -15,9 +15,18 @@ function CourseProgressCard({ course }: Props) {
     return (
         <Link href={'/courses/' + course?.courseId} className='h-full block'>
             <div className='h-full flex flex-col border-4 rounded-2xl overflow-hidden'>
-                <Image src={course.bannerImage.trimEnd()} alt={course.title} width={500} height={500}
-                    className='w-full h-42.5 object-cover rounded-t-xl'
-                />
+                {/* aspect-video locks the banner to a 16:9 box that scales
+                    with the card's width — when grid columns shrink the
+                    image shrinks proportionally instead of staying a
+                    fixed 170px and either letterboxing or wasting space.
+                    object-cover + center keeps the focal point visible
+                    while the overflowing edges get cropped, not squashed. */}
+                <div className='relative w-full aspect-video overflow-hidden rounded-t-xl'>
+                    <Image src={course.bannerImage.trimEnd()} alt={course.title} fill
+                        sizes='(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw'
+                        className='object-cover object-center'
+                    />
+                </div>
                 <div className='font-game p-4 flex-1 flex flex-col'>
                     <h2 className='text-lg font-light text-gray-500'>Course</h2>
                     <h2 className='text-2xl line-clamp-2 min-h-14'>{course.title}</h2>

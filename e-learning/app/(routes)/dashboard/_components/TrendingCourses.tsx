@@ -60,15 +60,15 @@ function TrendingCourses() {
           {visible.map((course) => (
             <Link key={course.courseId} href={`/courses/${course.courseId}`} className="h-full block">
               <div className="h-full flex flex-col border-4 rounded-xl hover:bg-zinc-900 cursor-pointer overflow-hidden">
-                <div className="relative">
+                <div className="relative w-full aspect-video overflow-hidden">
                   <Image
                     src={course.bannerImage.trimEnd()}
                     alt={course.title}
-                    width={400}
-                    height={400}
-                    className="w-full h-30 object-cover"
+                    fill
+                    sizes='(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw'
+                    className="object-cover object-center"
                   />
-                  <span className="absolute top-2 right-2 bg-orange-500/90 text-white font-game text-sm px-2 py-1 rounded">
+                  <span className="absolute top-2 right-2 bg-orange-500/90 text-white font-game text-sm px-2 py-1 rounded z-10">
                     {course.enrollmentCount} learners
                   </span>
                 </div>

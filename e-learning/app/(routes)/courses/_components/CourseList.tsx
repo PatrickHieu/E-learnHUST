@@ -59,7 +59,6 @@ export type Lesson = {
 }
 
 type Props = {
-    smallerCard?: boolean,
     maxLimit?: number,
     /**
      * When true, render the search input + level filter chips above the grid.
@@ -75,7 +74,7 @@ const LEVELS = [
     { value: 'advanced', label: 'Advanced' },
 ] as const;
 
-function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }: Props) {
+function CourseList({ maxLimit = 100, showFilters = false }: Props) {
 
     const searchParams = useSearchParams();
     const [coursesList, setCoursesList] = useState<Course[]>([]);
@@ -196,16 +195,16 @@ function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }
                         // the description or title is.
                         const cardInner = (
                             <div className='h-full flex flex-col border-4 rounded-xl hover:bg-zinc-900 cursor-pointer relative overflow-hidden'>
-                                <div className='relative'>
+                                <div className='relative w-full aspect-video overflow-hidden rounded-t-lg'>
                                     <Image
                                         src={course?.bannerImage.trimEnd()}
                                         alt={course?.title}
-                                        width={400}
-                                        height={400}
-                                        className={`w-full object-cover rounded-t-lg ${smallerCard ? 'h-[120px]' : 'h-[200px]'} ${isLocked ? 'opacity-70' : ''}`}
+                                        fill
+                                        sizes='(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw'
+                                        className={`object-cover object-center ${isLocked ? 'opacity-70' : ''}`}
                                     />
                                     {isLocked && (
-                                        <div className='absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 pointer-events-none'>
+                                        <div className='absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/40 pointer-events-none z-10'>
                                             <div className='w-12 h-12 rounded-full bg-black/70 flex items-center justify-center border-2 border-yellow-400'>
                                                 <Lock className='w-6 h-6 text-yellow-300' />
                                             </div>
