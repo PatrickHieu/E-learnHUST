@@ -56,26 +56,26 @@ function TrendingCourses() {
           <Skeleton className="h-[180px] w-full rounded-xl" />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-5 items-stretch">
           {visible.map((course) => (
-            <Link key={course.courseId} href={`/courses/${course.courseId}`}>
-              <div className="border-4 rounded-xl hover:bg-zinc-900 cursor-pointer overflow-hidden">
-                <div className="relative">
+            <Link key={course.courseId} href={`/courses/${course.courseId}`} className="h-full block">
+              <div className="h-full flex flex-col border-4 rounded-xl hover:bg-zinc-900 cursor-pointer overflow-hidden">
+                <div className="relative w-full aspect-video overflow-hidden">
                   <Image
                     src={course.bannerImage.trimEnd()}
                     alt={course.title}
-                    width={400}
-                    height={400}
-                    className="w-full h-[120px] object-cover"
+                    fill
+                    sizes='(min-width: 1280px) 33vw, (min-width: 768px) 50vw, 100vw'
+                    className="object-cover object-center"
                   />
-                  <span className="absolute top-2 right-2 bg-orange-500/90 text-white font-game text-sm px-2 py-1 rounded">
+                  <span className="absolute top-2 right-2 bg-orange-500/90 text-white font-game text-sm px-2 py-1 rounded z-10">
                     {course.enrollmentCount} learners
                   </span>
                 </div>
-                <div className="p-3">
-                  <h3 className="font-game text-xl">{course.title}</h3>
-                  <p className="font-game text-sm text-gray-400 line-clamp-2">{course.desc}</p>
-                  <div className="flex items-center gap-3 mt-2">
+                <div className="p-3 flex-1 flex flex-col">
+                  <h3 className="font-game text-xl line-clamp-1">{course.title}</h3>
+                  <p className="font-game text-sm text-gray-400 line-clamp-2 min-h-10">{course.desc}</p>
+                  <div className="flex items-center gap-3 mt-auto pt-2">
                     <span className="bg-zinc-800 flex gap-2 font-game p-1 px-3 rounded-2xl items-center inline-flex text-green-500 text-sm">
                       <ChartNoAxesColumnIncreasingIcon className="h-3 w-3" />
                       {course.level}

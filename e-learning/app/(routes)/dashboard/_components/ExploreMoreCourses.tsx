@@ -15,7 +15,7 @@ function ExploreMoreCourses() {
           {/* CourseList uses useSearchParams internally — wrap in
               Suspense so the dashboard still prerenders cleanly. */}
           <Suspense fallback={null}>
-            <CourseList smallerCard={true} maxLimit={5} />
+            <CourseList maxLimit={6} />
           </Suspense>
     </div>
   )

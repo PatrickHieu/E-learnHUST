@@ -57,13 +57,13 @@ function EnrolledCourses() {
                     </Link>
                 </div>
                 :
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-5 object-cover">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-2 gap-5 items-stretch">
                     {
-                        enrolledCourses?.map((course, index) => (
-                            <div>
-                                <CourseProgressCard course={course} />
-                            </div>
-                        ) )
+                        // Drop the extra <div> wrap (it stripped the h-full
+                        // path Link → grid item) and add the missing key.
+                        enrolledCourses?.map((course) => (
+                            <CourseProgressCard key={course.courseId} course={course} />
+                        ))
                     }
                 </div>
             }
