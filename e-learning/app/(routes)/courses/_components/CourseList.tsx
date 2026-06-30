@@ -185,12 +185,17 @@ function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }
                     No courses match your search.
                 </div>
             ) : (
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 mt-3'>
+                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 mt-3 items-stretch'>
                     {visibleCourses.map((course, index) => {
                         const tier = course.accessTier ?? 'free';
                         const isLocked = tier !== 'free' && !course.enrolled;
+                        // Card is a flex column filling the wrapper height; the
+                        // content section is flex-1 + flex-col so the level /
+                        // price chip row can hug the bottom with mt-auto. Result:
+                        // every card in a row lines up regardless of how long
+                        // the description or title is.
                         const cardInner = (
-                            <div className='border-4 rounded-xl hover:bg-zinc-900 cursor-pointer relative overflow-hidden'>
+                            <div className='h-full flex flex-col border-4 rounded-xl hover:bg-zinc-900 cursor-pointer relative overflow-hidden'>
                                 <div className='relative'>
                                     <Image
                                         src={course?.bannerImage.trimEnd()}
@@ -210,14 +215,14 @@ function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }
                                         </div>
                                     )}
                                 </div>
-                                <div className='p-4'>
-                                    <h2 className='font-game text-2xl'>
+                                <div className='p-4 flex-1 flex flex-col'>
+                                    <h2 className='font-game text-2xl line-clamp-2 min-h-[3.5rem]'>
                                         {course?.title}
                                     </h2>
-                                    <p className='font-game text-xl text-gray-400 line-clamp-2'>
+                                    <p className='font-game text-xl text-gray-400 line-clamp-2 min-h-[3.5rem]'>
                                         {course?.desc}
                                     </p>
-                                    <div className='flex items-center gap-2 flex-wrap mt-3'>
+                                    <div className='flex items-center gap-2 flex-wrap mt-auto pt-3'>
                                         <h2 className='bg-zinc-800 inline-flex gap-2 font-game p-1 px-4 rounded-2xl items-center text-green-600 text-lg'>
                                             <ChartNoAxesColumnIncreasingIcon className='h-4 w-4' />
                                             {course?.level}
@@ -238,18 +243,24 @@ function CourseList({ smallerCard = false, maxLimit = 100, showFilters = false }
                             </div>
                         );
                         // Locked cards open the paywall modal; everything else
-                        // continues to the existing course detail page.
+                        // continues to the existing course detail page. Both
+                        // wrappers carry `h-full block` so the grid's
+                        // items-stretch can size them to the tallest row peer.
                         return isLocked ? (
                             <button
                                 key={course?.courseId ?? index}
                                 type='button'
                                 onClick={() => setPaywallCourse(course)}
-                                className='text-left'
+                                className='text-left h-full block'
                             >
                                 {cardInner}
                             </button>
                         ) : (
-                            <Link href={'/courses/' + course?.courseId} key={course?.courseId ?? index}>
+                            <Link
+                                href={'/courses/' + course?.courseId}
+                                key={course?.courseId ?? index}
+                                className='h-full block'
+                            >
                                 {cardInner}
                             </Link>
                         );
